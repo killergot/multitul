@@ -74,12 +74,14 @@ impl Wordly{
 struct WordlyGame{
     word : String,
     step : u8,
-    attempts: Vec<String>
+    attempts: Vec<Attempt>
 }
 
 impl WordlyGame{
     pub fn new() -> WordlyGame{
-        WordlyGame{word: "silly".to_string(), step: 1, attempts: vec!["qwert".to_string(), "aidfg".to_string()]}
+        WordlyGame{word: "silly".to_string(), step: 1, attempts: vec![
+            Attempt("qwert".to_string()),
+            "aidfg".to_string()]}
     }
 }
 
@@ -96,4 +98,25 @@ pub enum WordlyState{
     Menu,
     InGame,
     Finished,
+}
+
+
+#[derive(Debug, Clone, Default)]
+pub struct Attempt{
+    word: String,
+    // 0 - nothing, 1 - somewhere, 2 - in point
+    // exaple: goal - ship, attempt - glip => marked - [2,1,0,0]
+    marked: [u8; 5]
+}
+
+impl Attempt{
+    pub fn new(goal_word: String, attempt_word: String) -> Attempt{
+        for (i,c) in goal_word.chars().enumerate(){
+            if c == attempt_word.chars().nth(i).unwrap(){
+                // here will logick for construct true marked
+            }
+        }
+
+        Attempt{word: attempt_word, marked: [0; 5]}
+    }
 }

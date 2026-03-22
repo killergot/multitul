@@ -1,6 +1,7 @@
 use iced::{
-    Element,
+    {Element,Border,Color},
     widget::{button, column, text, container},
+
 };
 use iced::widget::row;
 
@@ -22,7 +23,31 @@ impl Wordly{
                 column(
                     self.proccess_game.attempts.iter().map(|word| {
                         row(
-                            word.chars().map(|c| text(c.to_string()).into())
+                            word.chars()
+                                .zip(self.proccess_game.word.chars())
+                                .map(|(guess_char, target_char)| {
+                                    let is_correct_place = guess_char == target_char;
+
+                                    container(text(guess_char.to_string()))
+                                        .height(30)
+                                        .width(30)
+                                        .style(move |_| {
+                                            if is_correct_place {
+                                                container::Style {
+                                                    background: Some(Color::from_rgb(0.8, 0.8, 1.0).into()),
+                                                    border: Border {
+                                                        width: 2.0,
+                                                        color: Color::from_rgb(0.1, 0.8, 0.3),
+                                                        radius: 6.0.into(),
+                                                    },
+                                                    ..Default::default()
+                                                }
+                                            } else {
+                                                Default::default()
+                                            }
+                                        })
+                                        .into()
+                                })
                         ).into()
                     })
                 ).into()
@@ -54,7 +79,7 @@ struct WordlyGame{
 
 impl WordlyGame{
     pub fn new() -> WordlyGame{
-        WordlyGame{word: "silly".to_string(), step: 1, attempts: vec!["qwert".to_string(), "asdfg".to_string()]}
+        WordlyGame{word: "silly".to_string(), step: 1, attempts: vec!["qwert".to_string(), "aidfg".to_string()]}
     }
 }
 

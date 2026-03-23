@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+
 use iced::{
     {Element,Border,Color},
     widget::{button, column, text, container},
@@ -111,12 +114,23 @@ pub struct Attempt{
 
 impl Attempt{
     pub fn new(goal_word: String, attempt_word: String) -> Attempt{
-        for (i,c) in goal_word.chars().enumerate(){
-            if c == attempt_word.chars().nth(i).unwrap(){
-                // here will logick for construct true marked
+        let mut counter: HashMap<char, u8> = HashMap::new();
+        let mut marked = [0;5];
+        for c in goal_word.chars() {
+            *counter.entry(c).or_insert(0) += 1;
+        }
+        for (i,c) in attempt_word.chars().enumerate() {
+            if goal_word.chars().nth(i) == Some(c){
+                marked[i] = 2;
+                *counter.get_mut(&c).unwrap() -= 1;
+            }
+        }
+        for (i,c) in attempt_word.chars().enumerate() {
+            if counter.contains_key(&c) && counter[&c] > 0 && marked[i] != 2{
+                marked[i] = 1;
             }
         }
 
-        Attempt{word: attempt_word, marked: [0; 5]}
+        Attempt{word: attempt_word, marked}
     }
 }

@@ -6,7 +6,7 @@ use iced::{
     widget::{button, column, text, container},
 
 };
-use iced::widget::row;
+use iced::widget::{center_y, row};
 
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
@@ -24,18 +24,18 @@ impl Wordly{
                 ].into(),
             WordlyState::InGame => {
                 column(
-                    self.proccess_game.attempts.iter().map(|word| {
+                    self.proccess_game.attempts.iter().map(|attempt| {
                         row(
-                            word.chars()
-                                .zip(self.proccess_game.word.chars())
-                                .map(|(guess_char, target_char)| {
-                                    let is_correct_place = guess_char == target_char;
+                            attempt.word.chars()
+                                .zip(attempt.marked)
+                                .map(|(char, mark)| {
 
-                                    container(text(guess_char.to_string()))
+                                    container(text(char.to_string()))
                                         .height(30)
                                         .width(30)
+                                        .center(30)
                                         .style(move |_| {
-                                            if is_correct_place {
+                                            if mark == 2 {
                                                 container::Style {
                                                     background: Some(Color::from_rgb(0.8, 0.8, 1.0).into()),
                                                     border: Border {
@@ -45,7 +45,18 @@ impl Wordly{
                                                     },
                                                     ..Default::default()
                                                 }
-                                            } else {
+                                            } else if mark == 1 {
+                                                container::Style {
+                                                    background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
+                                                    border: Border {
+                                                        width: 2.0,
+                                                        color: Color::from_rgb(0.0, 0.8, 0.0),
+                                                        radius: 6.0.into(),
+                                                    },
+                                                    ..Default::default()
+                                                }
+                                            }
+                                            else {
                                                 Default::default()
                                             }
                                         })
@@ -83,8 +94,9 @@ struct WordlyGame{
 impl WordlyGame{
     pub fn new() -> WordlyGame{
         WordlyGame{word: "silly".to_string(), step: 1, attempts: vec![
-            Attempt("qwert".to_string()),
-            "aidfg".to_string()]}
+            Attempt::new("silly".to_string(),"qwert".to_string()),
+            Attempt::new("silly".to_string(),"aighl".to_string()),
+            Attempt::new("silly".to_string(),"lilil".to_string())]}
     }
 }
 
@@ -128,6 +140,7 @@ impl Attempt{
         for (i,c) in attempt_word.chars().enumerate() {
             if counter.contains_key(&c) && counter[&c] > 0 && marked[i] != 2{
                 marked[i] = 1;
+                *counter.get_mut(&c).unwrap() -= 1;
             }
         }
 

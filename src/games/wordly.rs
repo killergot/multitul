@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-
+use unicode_segmentation::UnicodeSegmentation;
 
 use iced::{
     {Element,Border,Color},
     widget::{button, column, text, container},
 
 };
-use iced::widget::{center_y, row};
+use iced::widget::{center_y, row, text_input};
 
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
@@ -23,48 +23,55 @@ impl Wordly{
                     button("Go home").on_press(WordlyMessage::GoHome)
                 ].into(),
             WordlyState::InGame => {
-                column(
-                    self.proccess_game.attempts.iter().map(|attempt| {
-                        row(
-                            attempt.word.chars()
-                                .zip(attempt.marked)
-                                .map(|(char, mark)| {
+                let temp = column(self.proccess_game.attempts.iter().map(|attempt| {
+                    row(
+                        attempt.word.chars()
+                            .zip(attempt.marked)
+                            .map(|(char, mark)| {
 
-                                    container(text(char.to_string()))
-                                        .height(30)
-                                        .width(30)
-                                        .center(30)
-                                        .style(move |_| {
-                                            if mark == 2 {
-                                                container::Style {
-                                                    background: Some(Color::from_rgb(0.8, 0.8, 1.0).into()),
-                                                    border: Border {
-                                                        width: 2.0,
-                                                        color: Color::from_rgb(0.1, 0.8, 0.3),
-                                                        radius: 6.0.into(),
-                                                    },
-                                                    ..Default::default()
-                                                }
-                                            } else if mark == 1 {
-                                                container::Style {
-                                                    background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
-                                                    border: Border {
-                                                        width: 2.0,
-                                                        color: Color::from_rgb(0.0, 0.8, 0.0),
-                                                        radius: 6.0.into(),
-                                                    },
-                                                    ..Default::default()
-                                                }
+                                container(text(char.to_string()))
+                                    .height(30)
+                                    .width(30)
+                                    .center(30)
+                                    .style(move |_| {
+                                        if mark == 2 {
+                                            container::Style {
+                                                background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),
+                                                border: Border {
+                                                    width: 2.0,
+                                                    color: Color::from_rgb(0.1, 0.8, 0.3),
+                                                    radius: 6.0.into(),
+                                                },
+                                                ..Default::default()
                                             }
-                                            else {
-                                                Default::default()
+                                        } else if mark == 1 {
+                                            container::Style {
+                                                background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
+                                                border: Border {
+                                                    width: 2.0,
+                                                    color: Color::from_rgb(0.0, 0.8, 0.0),
+                                                    radius: 6.0.into(),
+                                                },
+                                                ..Default::default()
                                             }
-                                        })
-                                        .into()
-                                })
-                        ).into()
-                    })
-                ).into()
+                                        }
+                                        else {
+                                            Default::default()
+                                        }
+                                    })
+                                    .into()
+                            })
+                    ).into()
+                }));
+                column![
+                    temp,
+                    text_input("пирог", &self.proccess_game.current_input)
+                        .on_input(WordlyMessage::InputChanged)
+                        .on_submit(WordlyMessage::SubmitAttempt)
+                        .padding(10)
+                        .size(16)
+                        .width(200)
+                ].into()
             },
             _ => iced::widget::column![].into(),
         }
@@ -76,7 +83,7 @@ impl Wordly{
                 self.state = WordlyState::InGame;
                 self.proccess_game = WordlyGame::new();
             }
-            _ => {}
+            _ => {self.proccess_game.update(message);}
         }
     }
 }
@@ -88,7 +95,8 @@ impl Wordly{
 struct WordlyGame{
     word : String,
     step : u8,
-    attempts: Vec<Attempt>
+    attempts: Vec<Attempt>,
+    current_input: String,
 }
 
 impl WordlyGame{
@@ -96,7 +104,26 @@ impl WordlyGame{
         WordlyGame{word: "silly".to_string(), step: 1, attempts: vec![
             Attempt::new("silly".to_string(),"qwert".to_string()),
             Attempt::new("silly".to_string(),"aighl".to_string()),
-            Attempt::new("silly".to_string(),"lilil".to_string())]}
+            Attempt::new("silly".to_string(),"lilil".to_string())],
+        current_input: "".to_string(),}
+    }
+    pub fn update(&mut self, message: WordlyMessage){
+        match message {
+            WordlyMessage::InputChanged(txt) => {
+                if txt.graphemes(true).count() <= 5 {
+                    self.current_input = txt;
+                }
+            },
+            WordlyMessage::SubmitAttempt =>{
+                // create new attempt
+                if self.current_input.graphemes(true).count() == 5 {
+                    self.attempts.push(Attempt::new("silly".to_string(), self.current_input.clone()));
+                    self.current_input.clear();
+                }
+            },
+            _ => {
+            }
+        }
     }
 }
 
@@ -104,7 +131,9 @@ impl WordlyGame{
 #[derive(Debug, Clone)]
 pub enum WordlyMessage {
     GoHome,
-    GoPlay
+    GoPlay,
+    InputChanged(String),
+    SubmitAttempt,
 }
 
 #[derive(Debug, Clone, Default)]

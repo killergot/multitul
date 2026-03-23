@@ -2352,6 +2352,7 @@ name = "rust_multitul"
 version = "0.1.0"
 dependencies = [
  "iced",
+ "unicode-segmentation",
 ]
 
 [[package]]

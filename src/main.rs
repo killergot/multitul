@@ -1,11 +1,9 @@
 mod games;
 use crate::games::wordly::{Wordly, WordlyMessage};
 
-use iced::{
-    Element, Theme,
-    widget::{button, column, text},
-};
+use iced::{Element, Theme, widget::{button, column, text}, Length};
 use iced::application::UpdateFn;
+use iced::widget::container;
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -53,7 +51,7 @@ impl App {
     }
 
     fn view(app: &Self) -> Element<'_, Message> {
-        match &app.screen {
+        let content = match &app.screen {
             Screen::Counter(counter) => column![
                 text(format!("Значение: {}", counter.value)),
                 button("Увеличить").on_press(Message::Counter(CounterMessage::Increment)),
@@ -71,7 +69,13 @@ impl App {
             ].spacing(12)
                 .padding(20)
                 .into(),
-        }
+        };
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .into()
     }
 }
 #[derive(Debug, Clone)]

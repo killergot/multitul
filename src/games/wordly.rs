@@ -7,6 +7,8 @@ use iced::{
 
 };
 use iced::widget::{center_y, row, text_input};
+use crate::Message;
+use crate::Screen::Main;
 
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
@@ -73,6 +75,30 @@ impl Wordly{
                         .width(200)
                 ].into()
             },
+            WordlyState::FinishedWin => {
+                column![
+                    text("Finished"),
+                    text("You win"),
+                    text(format!(
+                        "You spent {} attempts for word \"{}\"",
+                        self.proccess_game.attempts.len(),
+                        self.proccess_game.word
+                    )),
+                    button("Go to menu").on_press(WordlyMessage::GoHome).padding([10,14])
+                ].into()
+            },
+            WordlyState::FinishedLose => {
+                column![
+                    text("Finished"),
+                    text("You Lose"),
+                    text(format!(
+                        "You spent 6 attempts for word \"{}\" and not predict!",
+                        self.proccess_game.word
+                    )),
+                    button("Main menu").on_press(WordlyMessage::GoHome).padding([10,14]),
+                    button("Wordly menu").on_press(WordlyMessage::GoHome).padding([10,14])
+                ].into()
+            },
             _ => iced::widget::column![].into(),
         }
     }
@@ -82,6 +108,19 @@ impl Wordly{
             WordlyMessage::GoPlay => {
                 self.state = WordlyState::InGame;
                 self.proccess_game = WordlyGame::new();
+            },
+            WordlyMessage::SubmitAttempt => {
+                if self.proccess_game.current_input == self.proccess_game.word{
+                    self.state = WordlyState::FinishedWin;
+                    self.proccess_game.update(message);
+                }
+                else if self.proccess_game.attempts.len() == 6{
+                    self.state = WordlyState::FinishedLose;
+                }
+                else{
+                    self.proccess_game.update(message);
+                }
+
             }
             _ => {self.proccess_game.update(message);}
         }
@@ -94,17 +133,13 @@ impl Wordly{
 #[derive(Debug, Clone, Default)]
 struct WordlyGame{
     word : String,
-    step : u8,
     attempts: Vec<Attempt>,
     current_input: String,
 }
 
 impl WordlyGame{
     pub fn new() -> WordlyGame{
-        WordlyGame{word: "silly".to_string(), step: 1, attempts: vec![
-            Attempt::new("silly".to_string(),"qwert".to_string()),
-            Attempt::new("silly".to_string(),"aighl".to_string()),
-            Attempt::new("silly".to_string(),"lilil".to_string())],
+        WordlyGame{word: "карта".to_string(), attempts: vec![],
         current_input: "".to_string(),}
     }
     pub fn update(&mut self, message: WordlyMessage){
@@ -117,7 +152,7 @@ impl WordlyGame{
             WordlyMessage::SubmitAttempt =>{
                 // create new attempt
                 if self.current_input.graphemes(true).count() == 5 {
-                    self.attempts.push(Attempt::new("silly".to_string(), self.current_input.clone()));
+                    self.attempts.push(Attempt::new("карта".to_string(), self.current_input.clone()));
                     self.current_input.clear();
                 }
             },
@@ -141,7 +176,8 @@ pub enum WordlyState{
     #[default]
     Menu,
     InGame,
-    Finished,
+    FinishedLose,
+    FinishedWin
 }
 
 

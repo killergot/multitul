@@ -152,7 +152,7 @@ impl WordlyGame{
             WordlyMessage::SubmitAttempt =>{
                 // create new attempt
                 if self.current_input.graphemes(true).count() == 5 {
-                    self.attempts.push(Attempt::new("карта".to_string(), self.current_input.clone()));
+                    self.attempts.push(Attempt::new(self.word.clone(), self.current_input.clone()));
                     self.current_input.clear();
                 }
             },

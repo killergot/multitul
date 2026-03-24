@@ -8,12 +8,12 @@ pub struct WordProvider{
 impl WordProvider{
     pub fn get_all_wards() ->  Vec<String>  {
         let nouns_path = std::path::PathBuf::from("assets/all_nouns_ru.txt");
-        read_to_string(nouns_path).unwrap().split("\n").map(|s| s.to_string()).collect()
+        read_to_string(nouns_path).unwrap().split("\n").map(|s| s.trim().to_string()).collect()
     }
 
     pub fn get_local_words_5_ru() -> Vec<String> {
         let nouns_path = std::path::PathBuf::from("assets/words_5_ru.txt");
-        read_to_string(nouns_path).unwrap().split("\n").map(|s| s.to_string()).collect()
+        read_to_string(nouns_path).unwrap().split("\n").map(|s| s.trim().to_string()).collect()
     }
 
 

@@ -15,7 +15,52 @@ use super::word_provider::WordProvider;
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
     state: WordlyState,
-    proccess_game: WordlyGame
+    proccess_game: WordlyGame,
+    all_worlds: Vec<String>
+}
+
+
+fn key_widget<'a>(symbol: &'a str, mark: u8) -> Element<'a, WordlyMessage> {
+    container(text(symbol))
+        .height(30)
+        .width(30)
+        .center(30)
+        .style(move |_| {
+            if mark == 2 {
+                container::Style {
+                    background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),
+                    border: Border {
+                        width: 2.0,
+                        color: Color::from_rgb(0.1, 0.8, 0.3),
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }
+            } else if mark == 1 {
+                container::Style {
+                    background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
+                    border: Border {
+                        width: 2.0,
+                        color: Color::from_rgb(0.0, 0.8, 0.0),
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }
+            } else if mark == 0 {
+                container::Style {
+                    background: Some(Color::from_rgb(0.1, 0.1, 0.1).into()),
+                    border: Border {
+                        width: 2.0,
+                        color: Color::from_rgb(0.0, 0.0, 0.0),
+                        radius: 6.0.into(),
+                    },
+                    ..Default::default()
+                }
+            } else {
+                Default::default()
+            }
+        })
+        .into()
 }
 
 impl Wordly{
@@ -34,9 +79,9 @@ impl Wordly{
                             .map(|(char, mark)| {
 
                                 container(text(char.to_string()))
-                                    .height(30)
-                                    .width(30)
-                                    .center(30)
+                                    .height(60)
+                                    .width(60)
+                                    .center(60)
                                     .style(move |_| {
                                         if mark == 2 {
                                             container::Style {
@@ -67,6 +112,35 @@ impl Wordly{
                             })
                     ).into()
                 }));
+                let keyboard = &self.proccess_game.keyboard;
+
+                let temp2 = column![
+                    row(
+                        keyboard
+                            .iter()
+                            .take(12)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(5),
+
+                    row(
+                        keyboard
+                            .iter()
+                            .skip(12)
+                            .take(11)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(5),
+
+                    row(
+                        keyboard
+                            .iter()
+                            .skip(23)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(5),
+                ].spacing(5);
+
                 column![
                     temp,
                     text_input("пирог", &self.proccess_game.current_input)
@@ -74,7 +148,8 @@ impl Wordly{
                         .on_submit(WordlyMessage::SubmitAttempt)
                         .padding(10)
                         .size(16)
-                        .width(200)
+                        .width(300),
+                    temp2
                 ].into()
             },
             WordlyState::FinishedWin => {
@@ -116,11 +191,16 @@ impl Wordly{
                     self.state = WordlyState::FinishedWin;
                     self.proccess_game.update(message);
                 }
-                else if self.proccess_game.attempts.len() == 6{
+                else if self.proccess_game.attempts.len() == 5{
                     self.state = WordlyState::FinishedLose;
                 }
                 else{
-                    self.proccess_game.update(message);
+                    if self.all_worlds.len() == 0{
+                        self.all_worlds = WordProvider::get_all_wards();
+                    }
+                    if self.all_worlds.contains(&self.proccess_game.current_input) {
+                        self.proccess_game.update(message);
+                    }
                 }
 
             }
@@ -130,19 +210,30 @@ impl Wordly{
 }
 
 
-
-
 #[derive(Debug, Clone, Default)]
 struct WordlyGame{
     word : String,
     attempts: Vec<Attempt>,
     current_input: String,
+    // We have 4 state for any char in keyboard:
+    // 0 - We know it no in the word
+    // 1 - We predict stead for the char
+    // 2 - We know the word contains the char, but not know where
+    // 3 - We haven't some info about the char - initional state
+    keyboard: HashMap<String,u8>,
 }
 
 impl WordlyGame{
     pub fn new() -> WordlyGame{
+        let all_char_ru = "йцукенгшщзхъфывапролджэячсмитьбю";
+        let mut keyboard = HashMap::new();
+        for i in all_char_ru.graphemes(true){
+            keyboard.insert(i.to_string(), 3);
+        }
+
         WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
-        current_input: "".to_string(),}
+        current_input: "".to_string(),
+        keyboard,}
     }
     pub fn update(&mut self, message: WordlyMessage){
         match message {
@@ -154,7 +245,21 @@ impl WordlyGame{
             WordlyMessage::SubmitAttempt =>{
                 // create new attempt
                 if self.current_input.graphemes(true).count() == 5 {
-                    self.attempts.push(Attempt::new(self.word.clone(), self.current_input.clone()));
+                    let temp_attempt = Attempt::new(self.word.clone(), self.current_input.clone());
+                    self.attempts.push(temp_attempt.clone());
+
+                    for (i,c) in self.current_input.graphemes(true).enumerate(){
+                        if temp_attempt.marked[i] == 1 {
+                            self.keyboard.entry(c.to_string()).and_modify(|e| *e = 1);
+                        } else if self.keyboard[c] != 1{
+                            if temp_attempt.marked[i] == 2 {
+                                self.keyboard.entry(c.to_string()).and_modify(|e| *e = 2);
+                            } else if self.keyboard[c] == 3 {
+                                self.keyboard.entry(c.to_string()).and_modify(|e| *e = 0);
+                            }
+                        }
+                    }
+
                     self.current_input.clear();
                 }
             },

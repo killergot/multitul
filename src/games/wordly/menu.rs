@@ -220,15 +220,15 @@ struct WordlyGame{
     // 1 - We predict stead for the char
     // 2 - We know the word contains the char, but not know where
     // 3 - We haven't some info about the char - initional state
-    keyboard: HashMap<String,u8>,
+    keyboard: Vec<(String,u8)>,
 }
 
 impl WordlyGame{
     pub fn new() -> WordlyGame{
         let all_char_ru = "йцукенгшщзхъфывапролджэячсмитьбю";
-        let mut keyboard = HashMap::new();
+        let mut keyboard = Vec::new();
         for i in all_char_ru.graphemes(true){
-            keyboard.insert(i.to_string(), 3);
+            keyboard.push((i.to_string(), 3));
         }
 
         WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
@@ -248,18 +248,26 @@ impl WordlyGame{
                     let temp_attempt = Attempt::new(self.word.clone(), self.current_input.clone());
                     self.attempts.push(temp_attempt.clone());
 
-                    for (i,c) in self.current_input.graphemes(true).enumerate(){
-                        if temp_attempt.marked[i] == 1 {
-                            self.keyboard.entry(c.to_string()).and_modify(|e| *e = 1);
-                        } else if self.keyboard[c] != 1{
-                            if temp_attempt.marked[i] == 2 {
-                                self.keyboard.entry(c.to_string()).and_modify(|e| *e = 2);
-                            } else if self.keyboard[c] == 3 {
-                                self.keyboard.entry(c.to_string()).and_modify(|e| *e = 0);
-                            }
-                        }
-                    }
+                    for (i, c) in self.current_input.graphemes(true).enumerate() {
+                        let status = temp_attempt.marked[i];
 
+                        // Используем for_each для выполнения действия
+                        self.keyboard.iter_mut().for_each(|(sym, mark)| {
+                            if sym == c {
+                                *mark = match status {
+                                    1 => 1, // На месте
+                                    2 => {
+                                        // Если уже 1, не меняем (приоритет точного совпадения)
+                                        if *mark != 1 { 2 } else { *mark }
+                                    },
+                                    _ => {
+                                        // Если не 1 и не 2, то 0
+                                        if *mark != 1 && *mark != 2 { 0 } else { *mark }
+                                    }
+                                };
+                            }
+                        });
+                    }
                     self.current_input.clear();
                 }
             },

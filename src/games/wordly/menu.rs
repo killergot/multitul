@@ -217,8 +217,8 @@ struct WordlyGame{
     current_input: String,
     // We have 4 state for any char in keyboard:
     // 0 - We know it no in the word
-    // 1 - We predict stead for the char
-    // 2 - We know the word contains the char, but not know where
+    // 1 - We know the word contains the char, but not know where
+    // 2 - We predict stead for the char
     // 3 - We haven't some info about the char - initional state
     keyboard: Vec<(String,u8)>,
 }
@@ -230,8 +230,8 @@ impl WordlyGame{
         for i in all_char_ru.graphemes(true){
             keyboard.push((i.to_string(), 3));
         }
-
-        WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
+        WordlyGame{word:"пирог".to_string(), attempts: vec![],
+        // WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
         current_input: "".to_string(),
         keyboard,}
     }
@@ -250,21 +250,21 @@ impl WordlyGame{
 
                     for (i, c) in self.current_input.graphemes(true).enumerate() {
                         let status = temp_attempt.marked[i];
+                        print!("status =  {}, mark = ",status);
 
                         // Используем for_each для выполнения действия
                         self.keyboard.iter_mut().for_each(|(sym, mark)| {
                             if sym == c {
                                 *mark = match status {
-                                    1 => 1, // На месте
-                                    2 => {
-                                        // Если уже 1, не меняем (приоритет точного совпадения)
-                                        if *mark != 1 { 2 } else { *mark }
-                                    },
+                                    1 => if *mark != 2 { 1 } else { *mark }, // На месте
+                                    // Если уже 2, не меняем (приоритет точного совпадения)
+                                    2 => 2,
                                     _ => {
                                         // Если не 1 и не 2, то 0
                                         if *mark != 1 && *mark != 2 { 0 } else { *mark }
                                     }
                                 };
+                                println!("{mark}");
                             }
                         });
                     }

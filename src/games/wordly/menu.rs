@@ -4,13 +4,13 @@ use unicode_segmentation::UnicodeSegmentation;
 use iced::{
     {Element,Border,Color},
     widget::{button, column, text, container},
-
 };
 use iced::widget::{center_y, row, text_input};
 
 
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
+use super::styles;
 
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
@@ -25,41 +25,7 @@ fn key_widget<'a>(symbol: &'a str, mark: u8) -> Element<'a, WordlyMessage> {
         .height(30)
         .width(30)
         .center(30)
-        .style(move |_| {
-            if mark == 2 {
-                container::Style {
-                    background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),
-                    border: Border {
-                        width: 2.0,
-                        color: Color::from_rgb(0.1, 0.8, 0.3),
-                        radius: 6.0.into(),
-                    },
-                    ..Default::default()
-                }
-            } else if mark == 1 {
-                container::Style {
-                    background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
-                    border: Border {
-                        width: 2.0,
-                        color: Color::from_rgb(0.0, 0.8, 0.0),
-                        radius: 6.0.into(),
-                    },
-                    ..Default::default()
-                }
-            } else if mark == 0 {
-                container::Style {
-                    background: Some(Color::from_rgb(0.1, 0.1, 0.1).into()),
-                    border: Border {
-                        width: 2.0,
-                        color: Color::from_rgb(0.0, 0.0, 0.0),
-                        radius: 6.0.into(),
-                    },
-                    ..Default::default()
-                }
-            } else {
-                Default::default()
-            }
-        })
+        .style(move |_| styles::key_style(mark))
         .into()
 }
 
@@ -77,37 +43,11 @@ impl Wordly{
                         attempt.word.chars()
                             .zip(attempt.marked)
                             .map(|(char, mark)| {
-
                                 container(text(char.to_string()))
                                     .height(60)
                                     .width(60)
                                     .center(60)
-                                    .style(move |_| {
-                                        if mark == 2 {
-                                            container::Style {
-                                                background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),
-                                                border: Border {
-                                                    width: 2.0,
-                                                    color: Color::from_rgb(0.1, 0.8, 0.3),
-                                                    radius: 6.0.into(),
-                                                },
-                                                ..Default::default()
-                                            }
-                                        } else if mark == 1 {
-                                            container::Style {
-                                                background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
-                                                border: Border {
-                                                    width: 2.0,
-                                                    color: Color::from_rgb(0.0, 0.8, 0.0),
-                                                    radius: 6.0.into(),
-                                                },
-                                                ..Default::default()
-                                            }
-                                        }
-                                        else {
-                                            Default::default()
-                                        }
-                                    })
+                                    .style(move |_| styles::key_style(mark))
                                     .into()
                             })
                     ).into()

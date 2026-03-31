@@ -83,9 +83,9 @@ impl Wordly{
                     text_input("пирог", &self.proccess_game.current_input)
                         .on_input(WordlyMessage::InputChanged)
                         .on_submit(WordlyMessage::SubmitAttempt)
-                        .padding(10)
-                        .size(16)
-                        .width(300),
+                        .padding(TEXT_INPUT_PADDING)
+                        .size(TEXT_INPUT_SIZE)
+                        .width(TEXT_INPUT_WIDTH),
                     temp2
                 ].into()
             },

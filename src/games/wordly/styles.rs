@@ -1,6 +1,6 @@
 use iced::{Border, Color, widget::container};
 
-pub fn key_style(mark: u8) -> container::Style {
+pub fn marked_cell_style(mark: u8) -> container::Style {
     match mark {
         2 => container::Style {
             background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),

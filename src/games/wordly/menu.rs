@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
-use iced::{
-    {Element,Border,Color},
-    widget::{button, column, text, container},
-};
-use iced::widget::{center_y, row, text_input};
+use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels};
+use iced::widget::{center_y, row, text_input, Space};
 
 
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
 use super::styles;
+use super::consts::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct Wordly{
@@ -22,10 +20,10 @@ pub struct Wordly{
 
 fn key_widget<'a>(symbol: &'a str, mark: u8) -> Element<'a, WordlyMessage> {
     container(text(symbol))
-        .height(30)
-        .width(30)
-        .center(30)
-        .style(move |_| styles::key_style(mark))
+        .height(KEY_WIDGET_SIZE)
+        .width(KEY_WIDGET_SIZE)
+        .center(KEY_WIDGET_SIZE)
+        .style(move |_| styles::marked_cell_style(mark))
         .into()
 }
 
@@ -44,10 +42,10 @@ impl Wordly{
                             .zip(attempt.marked)
                             .map(|(char, mark)| {
                                 container(text(char.to_string()))
-                                    .height(60)
-                                    .width(60)
-                                    .center(60)
-                                    .style(move |_| styles::key_style(mark))
+                                    .height(CHAR_WIDGET_SIZE)
+                                    .width(CHAR_WIDGET_SIZE)
+                                    .center(CHAR_WIDGET_SIZE)
+                                    .style(move |_| styles::marked_cell_style(mark))
                                     .into()
                             })
                     ).into()
@@ -58,28 +56,28 @@ impl Wordly{
                     row(
                         keyboard
                             .iter()
-                            .take(12)
+                            .take(LEN_FIRST_ROW_KEYBOARD_RU)
                             .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
                     )
-                    .spacing(5),
+                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
 
                     row(
                         keyboard
                             .iter()
-                            .skip(12)
-                            .take(11)
+                            .skip(LEN_FIRST_ROW_KEYBOARD_RU)
+                            .take(LEN_SECOND_ROW_KEYBOARD_RU)
                             .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
                     )
-                    .spacing(5),
+                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
 
                     row(
                         keyboard
                             .iter()
-                            .skip(23)
+                            .skip(LEN_FIRST_ROW_KEYBOARD_RU + LEN_SECOND_ROW_KEYBOARD_RU)
                             .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
                     )
-                    .spacing(5),
-                ].spacing(5);
+                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
+                ].spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU);
 
                 column![
                     temp,

@@ -26,6 +26,52 @@ fn key_widget<'a>(symbol: &'a str, mark: Mark) -> Element<'a, WordlyMessage> {
         .into()
 }
 
+fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
+    column(attempts.iter().map(|attempt| {
+        row(
+            attempt.word.chars()
+                .zip(attempt.marked)
+                .map(|(char, mark)| {
+                    container(text(char.to_string()))
+                        .height(CHAR_WIDGET_SIZE)
+                        .width(CHAR_WIDGET_SIZE)
+                        .center(CHAR_WIDGET_SIZE)
+                        .style(move |_| styles::marked_cell_style(mark))
+                        .into()
+                })
+        ).into()
+    })).into()
+}
+
+fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyMessage> {
+    column![
+                    row(
+                        keyboard
+                            .iter()
+                            .take(LEN_FIRST_ROW_KEYBOARD_RU)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(BASE_SPACE),
+
+                    row(
+                        keyboard
+                            .iter()
+                            .skip(LEN_FIRST_ROW_KEYBOARD_RU)
+                            .take(LEN_SECOND_ROW_KEYBOARD_RU)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(BASE_SPACE),
+
+                    row(
+                        keyboard
+                            .iter()
+                            .skip(LEN_FIRST_ROW_KEYBOARD_RU + LEN_SECOND_ROW_KEYBOARD_RU)
+                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+                    )
+                    .spacing(BASE_SPACE),
+                ].spacing(BASE_SPACE).into()
+}
+
 impl Wordly{
     pub fn view(&self) -> Element<'_, WordlyMessage>{
         match self.state {
@@ -35,58 +81,15 @@ impl Wordly{
                     button("Go home").on_press(WordlyMessage::GoHome)
                 ].into(),
             WordlyState::InGame => {
-                let temp = column(self.proccess_game.attempts.iter().map(|attempt| {
-                    row(
-                        attempt.word.chars()
-                            .zip(attempt.marked)
-                            .map(|(char, mark)| {
-                                container(text(char.to_string()))
-                                    .height(CHAR_WIDGET_SIZE)
-                                    .width(CHAR_WIDGET_SIZE)
-                                    .center(CHAR_WIDGET_SIZE)
-                                    .style(move |_| styles::marked_cell_style(mark))
-                                    .into()
-                            })
-                    ).into()
-                }));
-                let keyboard = &self.proccess_game.keyboard;
-
-                let temp2 = column![
-                    row(
-                        keyboard
-                            .iter()
-                            .take(LEN_FIRST_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
-
-                    row(
-                        keyboard
-                            .iter()
-                            .skip(LEN_FIRST_ROW_KEYBOARD_RU)
-                            .take(LEN_SECOND_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
-
-                    row(
-                        keyboard
-                            .iter()
-                            .skip(LEN_FIRST_ROW_KEYBOARD_RU + LEN_SECOND_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU),
-                ].spacing(SPACE_BETWEEN_ROW_KEYBOARD_RU);
-
                 column![
-                    temp,
+                    attempt_widget(&self.proccess_game.attempts),
                     text_input("пирог", &self.proccess_game.current_input)
                         .on_input(WordlyMessage::InputChanged)
                         .on_submit(WordlyMessage::SubmitAttempt)
                         .padding(TEXT_INPUT_PADDING)
                         .size(TEXT_INPUT_SIZE)
                         .width(TEXT_INPUT_WIDTH),
-                    temp2
+                    keyboard_widget(&self.proccess_game.keyboard),
                 ].into()
             },
             WordlyState::FinishedWin => {
@@ -98,6 +101,7 @@ impl Wordly{
                         self.proccess_game.attempts.len(),
                         self.proccess_game.word
                     )),
+                    attempt_widget(&self.proccess_game.attempts),
                     button("Go to menu").on_press(WordlyMessage::GoHome).padding([10,14])
                 ].into()
             },
@@ -109,9 +113,10 @@ impl Wordly{
                         "You spent 6 attempts for word \"{}\" and not predict!",
                         self.proccess_game.word
                     )),
+                    attempt_widget(&self.proccess_game.attempts),
                     button("Main menu").on_press(WordlyMessage::GoHome).padding([10,14]),
                     button("Wordly menu").on_press(WordlyMessage::GoHome).padding([10,14])
-                ].into()
+                ].spacing(BASE_SPACE).into()
             },
             _ => iced::widget::column![].into(),
         }
@@ -153,10 +158,10 @@ struct WordlyGame{
     attempts: Vec<Attempt>,
     current_input: String,
     // We have 4 state for any char in keyboard:
-    // 0 - We know it no in the word
-    // 1 - We know the word contains the char, but not know where
-    // 2 - We predict stead for the char
-    // 3 - We haven't some info about the char - initional state
+    // Absent - We know it no in the word
+    // Present - We know the word contains the char, but not know where
+    // Correct - We predict stead for the char
+    // Unknown - We haven't some info about the char - default state
     keyboard: Vec<(String,Mark)>,
 }
 
@@ -167,8 +172,8 @@ impl WordlyGame{
         for i in all_char_ru.graphemes(true){
             keyboard.push((i.to_string(), Mark::default()));
         }
-        WordlyGame{word:"пирог".to_string(), attempts: vec![],
-        // WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
+        // WordlyGame{word:"пирог".to_string(), attempts: vec![],
+        WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
         current_input: "".to_string(),
         keyboard,}
     }

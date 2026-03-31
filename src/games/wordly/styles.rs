@@ -1,8 +1,9 @@
 use iced::{Border, Color, widget::container};
+use crate::games::wordly::mark::Mark;
 
-pub fn marked_cell_style(mark: u8) -> container::Style {
+pub fn marked_cell_style(mark: Mark) -> container::Style {
     match mark {
-        2 => container::Style {
+        Mark::Correct => container::Style {
             background: Some(Color::from_rgb(0.4, 0.0, 0.4).into()),
             border: Border {
                 width: 2.0,
@@ -11,7 +12,7 @@ pub fn marked_cell_style(mark: u8) -> container::Style {
             },
             ..Default::default()
         },
-        1 => container::Style {
+        Mark::Present => container::Style {
             background: Some(Color::from_rgb(0.0, 0.0, 0.2).into()),
             border: Border {
                 width: 2.0,
@@ -20,7 +21,7 @@ pub fn marked_cell_style(mark: u8) -> container::Style {
             },
             ..Default::default()
         },
-        0 => container::Style {
+        Mark::Absent => container::Style {
             background: Some(Color::from_rgb(0.1, 0.1, 0.1).into()),
             border: Border {
                 width: 2.0,

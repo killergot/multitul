@@ -3,8 +3,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels};
 use iced::widget::{center_y, row, text_input, Space};
-
-
+use crate::games::wordly::mark::Mark;
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
 use super::styles;
@@ -18,7 +17,7 @@ pub struct Wordly{
 }
 
 
-fn key_widget<'a>(symbol: &'a str, mark: u8) -> Element<'a, WordlyMessage> {
+fn key_widget<'a>(symbol: &'a str, mark: Mark) -> Element<'a, WordlyMessage> {
     container(text(symbol))
         .height(KEY_WIDGET_SIZE)
         .width(KEY_WIDGET_SIZE)
@@ -158,7 +157,7 @@ struct WordlyGame{
     // 1 - We know the word contains the char, but not know where
     // 2 - We predict stead for the char
     // 3 - We haven't some info about the char - initional state
-    keyboard: Vec<(String,u8)>,
+    keyboard: Vec<(String,Mark)>,
 }
 
 impl WordlyGame{
@@ -166,7 +165,7 @@ impl WordlyGame{
         let all_char_ru = "йцукенгшщзхъфывапролджэячсмитьбю";
         let mut keyboard = Vec::new();
         for i in all_char_ru.graphemes(true){
-            keyboard.push((i.to_string(), 3));
+            keyboard.push((i.to_string(), Mark::default()));
         }
         WordlyGame{word:"пирог".to_string(), attempts: vec![],
         // WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
@@ -188,21 +187,19 @@ impl WordlyGame{
 
                     for (i, c) in self.current_input.graphemes(true).enumerate() {
                         let status = temp_attempt.marked[i];
-                        print!("status =  {}, mark = ",status);
 
                         // Используем for_each для выполнения действия
                         self.keyboard.iter_mut().for_each(|(sym, mark)| {
                             if sym == c {
                                 *mark = match status {
-                                    1 => if *mark != 2 { 1 } else { *mark }, // На месте
+                                    Mark::Present => if *mark != Mark::Correct { Mark::Present } else { *mark }, // На месте
                                     // Если уже 2, не меняем (приоритет точного совпадения)
-                                    2 => 2,
+                                    Mark::Correct => Mark::Correct,
                                     _ => {
                                         // Если не 1 и не 2, то 0
-                                        if *mark != 1 && *mark != 2 { 0 } else { *mark }
+                                        if *mark != Mark::Present && *mark != Mark::Correct { Mark::Absent } else { *mark }
                                     }
                                 };
-                                println!("{mark}");
                             }
                         });
                     }

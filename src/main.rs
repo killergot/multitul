@@ -5,6 +5,8 @@ use iced::{Element, Theme, widget::{button, column, text}, Length};
 use iced::application::UpdateFn;
 use iced::widget::container;
 use iced::{event, keyboard, Event, Subscription};
+use iced::keyboard::key::Named;
+use iced::keyboard::Key;
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -32,8 +34,6 @@ impl App {
                                     text,
                                     ..
                                 }) => {
-                    use iced::keyboard::key::Named;
-                    use iced::keyboard::Key;
 
                     match key.as_ref() {
                         Key::Named(Named::ArrowLeft) => {
@@ -64,7 +64,7 @@ impl App {
                 if let Screen::Wordly(wordly) = &mut app.screen {
                     wordly.key_pressed(key_msg);
                 }
-            }
+            },
             Message::Counter(msg) => {
                 match msg {
                     CounterMessage::Increment =>

@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
-use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels, Length};
+use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels, Length, Task};
 use iced::widget::{center_y, row, text_input, Space};
 use crate::games::wordly::mark::Mark;
-use crate::KeyMessage;
+use crate::{KeyMessage, Message};
+use crate::games::wordly::WordlyMessage::SubmitAttempt;
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
 use super::styles;
@@ -27,6 +28,22 @@ fn key_widget<'a>(symbol: &'a str, mark: Mark) -> Element<'a, WordlyMessage> {
         .into()
 }
 
+
+fn replace_by_index(current_input: &mut String, cursor: usize, new_sym: &str) -> String{
+    current_input
+        .graphemes(true)
+        .enumerate()
+        .map(|(i, sym)| {
+            if i == cursor{
+                new_sym.to_string()
+            } else {
+                sym.to_string()
+            }
+        })
+        .collect()
+}
+
+
 fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
     column(attempts.iter().map(|attempt| {
         row(
@@ -44,10 +61,10 @@ fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
     })).into()
 }
 
-fn input_attempt_widget<'a>(length: usize, cursor: usize) -> Element<'a, WordlyMessage> {
+fn input_attempt_widget<'a>(input_text: &'a str, cursor: usize) -> Element<'a, WordlyMessage> {
 
     row(
-        (0..length).map(|i| {
+        input_text.graphemes(true).enumerate().map(|(i,sym)| {
             let mark = if i == cursor {
                 Mark::Cursor
             }
@@ -55,7 +72,7 @@ fn input_attempt_widget<'a>(length: usize, cursor: usize) -> Element<'a, WordlyM
                 Mark::Unknown
             };
 
-            container(text(" "))
+            container(text(sym))
                 .height(CHAR_WIDGET_SIZE)
                 .width(CHAR_WIDGET_SIZE)
                 .center(CHAR_WIDGET_SIZE)
@@ -105,13 +122,7 @@ impl Wordly{
             WordlyState::InGame => {
                 column![
                     attempt_widget(&self.proccess_game.attempts),
-                    text_input("пирог", &self.proccess_game.current_input)
-                        .on_input(WordlyMessage::InputChanged)
-                        .on_submit(WordlyMessage::SubmitAttempt)
-                        .padding(TEXT_INPUT_PADDING)
-                        .size(TEXT_INPUT_SIZE)
-                        .width(TEXT_INPUT_WIDTH),
-                    input_attempt_widget(self.proccess_game.graphemes_count,
+                    input_attempt_widget(self.proccess_game.current_input.as_str(),
                                          self.proccess_game.cursor),
                     keyboard_widget(&self.proccess_game.keyboard),
                 ].into()
@@ -150,10 +161,11 @@ impl Wordly{
         match key_msg {
             KeyMessage::Left => self.proccess_game.move_left(),
             KeyMessage::Right => self.proccess_game.move_right(),
+            KeyMessage::Char(ch) => self.proccess_game.insert_char(ch),
+            KeyMessage::Enter => self.update(WordlyMessage::SubmitAttempt),
+            KeyMessage::Backspace => self.proccess_game.backspace(),
+
             _ => {}
-            // KeyMessage::Backspace => wordly.backspace(),
-            // KeyMessage::Enter => wordly.submit(),
-            // KeyMessage::Char(ch) => wordly.insert_text(ch),
         }
     }
 
@@ -212,12 +224,18 @@ impl WordlyGame{
         for i in all_char_ru.graphemes(true){
             keyboard.push((i.to_string(), Mark::default()));
         }
-        // WordlyGame{word:"пирог".to_string(), attempts: vec![],
+        let mut current_input = String::new();
+        // let word = "Пирог".to_string();
         let word = WordProvider::get_one_word_5_ru();
+        let graphemes_count = word.graphemes(true).count();
+        for i in 0..graphemes_count {
+            current_input.push(' ');
+        }
+
         WordlyGame{word: word.clone(),
-            graphemes_count: word.graphemes(true).count(),
+            graphemes_count,
             attempts: vec![],
-            current_input: "".to_string(),
+            current_input ,
             cursor: 0,
             focused: true,
         keyboard,}
@@ -239,21 +257,22 @@ impl WordlyGame{
                         let status = temp_attempt.marked[i];
 
                         // Используем for_each для выполнения действия
+                        // map не подходит, ибо нужен собиратель
                         self.keyboard.iter_mut().for_each(|(sym, mark)| {
                             if sym == c {
                                 *mark = match status {
-                                    Mark::Present => if *mark != Mark::Correct { Mark::Present } else { *mark }, // На месте
-                                    // Если уже 2, не меняем (приоритет точного совпадения)
+                                    Mark::Present => if *mark != Mark::Correct { Mark::Present } else { *mark },
                                     Mark::Correct => Mark::Correct,
                                     _ => {
-                                        // Если не 1 и не 2, то 0
                                         if *mark != Mark::Present && *mark != Mark::Correct { Mark::Absent } else { *mark }
                                     }
                                 };
                             }
                         });
                     }
-                    self.current_input.clear();
+                    self.current_input = String::new();
+                    self.cursor = 0;
+                    for _ in 0..self.graphemes_count { self.current_input.push(' '); }
                 }
             },
             _ => {
@@ -271,6 +290,26 @@ impl WordlyGame{
         if self.cursor < self.graphemes_count - 1
         {
             self.cursor += 1;
+        }
+    }
+
+    pub fn insert_char(&mut self, ch: String){
+        if ('а'..='я').contains(&ch.chars().next().unwrap()){
+            self.current_input = replace_by_index(&mut self.current_input,
+                                                self.cursor,
+                                                &ch);
+            if self.cursor < self.graphemes_count - 1 {
+                self.cursor += 1;
+            }
+        }
+    }
+
+    pub fn backspace(&mut self){
+        self.current_input = replace_by_index(&mut self.current_input,
+                                              self.cursor,
+                                              " ");
+        if self.cursor > 0 {
+            self.cursor -= 1;
         }
     }
 }

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
-use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels};
+use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels, Length};
 use iced::widget::{center_y, row, text_input, Space};
 use crate::games::wordly::mark::Mark;
+use crate::KeyMessage;
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
 use super::styles;
@@ -43,23 +44,18 @@ fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
     })).into()
 }
 
-fn input_attempt_widget<'a>(current_input: &'a str) -> Element<'a, WordlyMessage> {
-    let graphemes: Vec<&str> = current_input.graphemes(true).collect();
-    let cursor_index = graphemes.len();
+fn input_attempt_widget<'a>(length: usize, cursor: usize) -> Element<'a, WordlyMessage> {
 
     row(
-        (0..5).map(|i| {
-            let symbol = graphemes.get(i).copied().unwrap_or(" ");
-            let mark = if i == cursor_index && cursor_index < 5 {
-                Mark::Cursor
-            } else if cursor_index == 5 && i == 4 {
+        (0..length).map(|i| {
+            let mark = if i == cursor {
                 Mark::Cursor
             }
             else{
                 Mark::Unknown
             };
 
-            container(text(symbol))
+            container(text(" "))
                 .height(CHAR_WIDGET_SIZE)
                 .width(CHAR_WIDGET_SIZE)
                 .center(CHAR_WIDGET_SIZE)
@@ -115,7 +111,8 @@ impl Wordly{
                         .padding(TEXT_INPUT_PADDING)
                         .size(TEXT_INPUT_SIZE)
                         .width(TEXT_INPUT_WIDTH),
-                    input_attempt_widget(&self.proccess_game.current_input),
+                    input_attempt_widget(self.proccess_game.graphemes_count,
+                                         self.proccess_game.cursor),
                     keyboard_widget(&self.proccess_game.keyboard),
                 ].into()
             },
@@ -146,6 +143,17 @@ impl Wordly{
                 ].spacing(BASE_SPACE).into()
             },
             _ => iced::widget::column![].into(),
+        }
+    }
+
+    pub fn key_pressed(&mut self, key_msg: KeyMessage){
+        match key_msg {
+            KeyMessage::Left => self.proccess_game.move_left(),
+            KeyMessage::Right => self.proccess_game.move_right(),
+            _ => {}
+            // KeyMessage::Backspace => wordly.backspace(),
+            // KeyMessage::Enter => wordly.submit(),
+            // KeyMessage::Char(ch) => wordly.insert_text(ch),
         }
     }
 
@@ -182,6 +190,7 @@ impl Wordly{
 #[derive(Debug, Clone, Default)]
 struct WordlyGame{
     word : String,
+    graphemes_count : usize,
     attempts: Vec<Attempt>,
     // later carry this out in InputState struct
     current_input: String,
@@ -204,7 +213,10 @@ impl WordlyGame{
             keyboard.push((i.to_string(), Mark::default()));
         }
         // WordlyGame{word:"пирог".to_string(), attempts: vec![],
-        WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
+        let word = WordProvider::get_one_word_5_ru();
+        WordlyGame{word: word.clone(),
+            graphemes_count: word.graphemes(true).count(),
+            attempts: vec![],
             current_input: "".to_string(),
             cursor: 0,
             focused: true,
@@ -250,11 +262,16 @@ impl WordlyGame{
     }
 
     pub fn move_left(&mut self){
-        self.cursor -= 1;
+        if self.cursor > 0 {
+            self.cursor -= 1;
+        }
     }
 
     pub fn move_right(&mut self){
-        self.cursor += 1;
+        if self.cursor < self.graphemes_count - 1
+        {
+            self.cursor += 1;
+        }
     }
 }
 

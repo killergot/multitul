@@ -62,14 +62,7 @@ impl App {
         match message {
             Message::KeyPressed(key_msg) => {
                 if let Screen::Wordly(wordly) = &mut app.screen {
-                    match key_msg {
-                        KeyMessage::Left => wordly.move_left(),
-                        KeyMessage::Right => wordly.move_right(),
-                        _ => {}
-                        // KeyMessage::Backspace => wordly.backspace(),
-                        // KeyMessage::Enter => wordly.submit(),
-                        // KeyMessage::Char(ch) => wordly.insert_text(ch),
-                    }
+                    wordly.key_pressed(key_msg);
                 }
             }
             Message::Counter(msg) => {

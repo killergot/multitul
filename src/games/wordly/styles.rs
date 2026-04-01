@@ -30,6 +30,23 @@ pub fn marked_cell_style(mark: Mark) -> container::Style {
             },
             ..Default::default()
         },
-        _ => Default::default(),
+        Mark::Cursor => container::Style {
+            background: Some(Color::from_rgb(0., 0., 0.15).into()),
+            border: Border {
+                width: 2.0,
+                color: Color::from_rgb(0.2, 0.0, 0.2),
+                radius: 6.0.into(),
+            },
+            ..Default::default()
+        },
+        _ => container::Style {
+            border: Border {
+                width: 2.0,
+                color: Color::from_rgb(0.12, 0.12, 0.1),
+                radius: 6.0.into(),
+            }
+            ,
+            ..Default::default()
+        }
     }
 }

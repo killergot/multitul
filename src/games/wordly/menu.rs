@@ -43,6 +43,32 @@ fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
     })).into()
 }
 
+fn input_attempt_widget<'a>(current_input: &'a str) -> Element<'a, WordlyMessage> {
+    let graphemes: Vec<&str> = current_input.graphemes(true).collect();
+    let cursor_index = graphemes.len();
+
+    row(
+        (0..5).map(|i| {
+            let symbol = graphemes.get(i).copied().unwrap_or(" ");
+            let mark = if i == cursor_index && cursor_index < 5 {
+                Mark::Cursor
+            } else if cursor_index == 5 && i == 4 {
+                Mark::Cursor
+            }
+            else{
+                Mark::Unknown
+            };
+
+            container(text(symbol))
+                .height(CHAR_WIDGET_SIZE)
+                .width(CHAR_WIDGET_SIZE)
+                .center(CHAR_WIDGET_SIZE)
+                .style(move |_| styles::marked_cell_style(mark))
+                .into()
+        })
+    ).into()
+}
+
 fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyMessage> {
     column![
                     row(
@@ -89,6 +115,7 @@ impl Wordly{
                         .padding(TEXT_INPUT_PADDING)
                         .size(TEXT_INPUT_SIZE)
                         .width(TEXT_INPUT_WIDTH),
+                    input_attempt_widget(&self.proccess_game.current_input),
                     keyboard_widget(&self.proccess_game.keyboard),
                 ].into()
             },

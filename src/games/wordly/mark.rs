@@ -3,6 +3,7 @@ pub enum Mark {
     Absent,
     Present,
     Correct,
+    Cursor,
     #[default]
     Unknown,
 }

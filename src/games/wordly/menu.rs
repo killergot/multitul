@@ -183,13 +183,17 @@ impl Wordly{
 struct WordlyGame{
     word : String,
     attempts: Vec<Attempt>,
+    // later carry this out in InputState struct
     current_input: String,
+    cursor: usize,
+    focused: bool,
     // We have 4 state for any char in keyboard:
     // Absent - We know it no in the word
     // Present - We know the word contains the char, but not know where
     // Correct - We predict stead for the char
     // Unknown - We haven't some info about the char - default state
     keyboard: Vec<(String,Mark)>,
+
 }
 
 impl WordlyGame{
@@ -201,7 +205,9 @@ impl WordlyGame{
         }
         // WordlyGame{word:"пирог".to_string(), attempts: vec![],
         WordlyGame{word: WordProvider::get_one_word_5_ru(), attempts: vec![],
-        current_input: "".to_string(),
+            current_input: "".to_string(),
+            cursor: 0,
+            focused: true,
         keyboard,}
     }
     pub fn update(&mut self, message: WordlyMessage){
@@ -241,6 +247,14 @@ impl WordlyGame{
             _ => {
             }
         }
+    }
+
+    pub fn move_left(&mut self){
+        self.cursor -= 1;
+    }
+
+    pub fn move_right(&mut self){
+        self.cursor += 1;
     }
 }
 

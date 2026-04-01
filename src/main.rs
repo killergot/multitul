@@ -4,10 +4,12 @@ use crate::games::wordly::{Wordly, WordlyMessage};
 use iced::{Element, Theme, widget::{button, column, text}, Length};
 use iced::application::UpdateFn;
 use iced::widget::container;
+use iced::{event, keyboard, Event, Subscription};
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
         .theme(theme)
+        .subscription(App::subscription)
         .run()
 }
 
@@ -22,8 +24,54 @@ impl App {
         }
     }
 
+    fn subscription(_app: &Self) -> Subscription<Message> {
+        event::listen_with(|event, _status, _window| {
+            match event {
+                Event::Keyboard(keyboard::Event::KeyPressed {
+                                    key,
+                                    text,
+                                    ..
+                                }) => {
+                    use iced::keyboard::key::Named;
+                    use iced::keyboard::Key;
+
+                    match key.as_ref() {
+                        Key::Named(Named::ArrowLeft) => {
+                            Some(Message::KeyPressed(KeyMessage::Left))
+                        }
+                        Key::Named(Named::ArrowRight) => {
+                            Some(Message::KeyPressed(KeyMessage::Right))
+                        }
+                        Key::Named(Named::Backspace) => {
+                            Some(Message::KeyPressed(KeyMessage::Backspace))
+                        }
+                        Key::Named(Named::Enter) => {
+                            Some(Message::KeyPressed(KeyMessage::Enter))
+                        }
+                        _ => {
+                            text.map(|t| Message::KeyPressed(KeyMessage::Char(t.to_string())))
+                        }
+                    }
+                }
+                _ => None,
+            }
+        })
+    }
+
     fn update(app: &mut Self, message: Message){
         match message {
+            Message::KeyPressed(key_msg) => {
+                if let Screen::Wordly(wordly) = &mut app.screen {
+                    match key_msg {
+                        KeyMessage::Left => wordly.move_left(),
+                        KeyMessage::Right => wordly.move_right(),
+                        _ => {}
+                        // KeyMessage::Backspace => wordly.backspace(),
+                        // KeyMessage::Enter => wordly.submit(),
+                        // KeyMessage::Char(ch) => wordly.insert_text(ch),
+                    }
+                }
+            }
             Message::Counter(msg) => {
                 match msg {
                     CounterMessage::Increment =>
@@ -97,7 +145,17 @@ struct Counter {
 enum Message {
     SwitchTo(Screen),
     Counter(CounterMessage),
-    Wordly(WordlyMessage)
+    Wordly(WordlyMessage),
+    KeyPressed(KeyMessage)
+}
+
+#[derive(Debug, Clone)]
+enum KeyMessage {
+    Left,
+    Right,
+    Backspace,
+    Enter,
+    Char(String),
 }
 
 #[derive(Debug, Clone)]

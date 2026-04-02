@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
-use iced::{{Element, Border, Color}, widget::{button, column, text, container}, Pixels, Length, Task};
-use iced::widget::{center_y, row, text_input, Space};
+use iced::{{Element}, widget::{button, column, text, container}};
+use iced::widget::row;
 use crate::games::wordly::mark::Mark;
-use crate::{KeyMessage, Message};
-use crate::games::wordly::WordlyMessage::SubmitAttempt;
+use crate::{KeyMessage};
 use super::attempt::Attempt;
 use super::word_provider::WordProvider;
 use super::styles;
@@ -20,11 +19,11 @@ pub struct Wordly{
 
 
 fn key_widget<'a>(symbol: &'a str, mark: Mark) -> Element<'a, WordlyMessage> {
-    container(text(symbol))
+    button(text(symbol))
         .height(KEY_WIDGET_SIZE)
         .width(KEY_WIDGET_SIZE)
-        .center(KEY_WIDGET_SIZE)
-        .style(move |_| styles::marked_cell_style(mark))
+        .style(move |theme, status| styles::keyboard_button_style(theme, status, mark))
+        .on_press(WordlyMessage::KeyboardClicked(symbol.to_string()))
         .into()
 }
 
@@ -84,31 +83,31 @@ fn input_attempt_widget<'a>(input_text: &'a str, cursor: usize) -> Element<'a, W
 
 fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyMessage> {
     column![
-                    row(
-                        keyboard
-                            .iter()
-                            .take(LEN_FIRST_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(BASE_SPACE),
+        row(
+            keyboard
+                .iter()
+                .take(LEN_FIRST_ROW_KEYBOARD_RU)
+                .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+        )
+        .spacing(BASE_SPACE),
 
-                    row(
-                        keyboard
-                            .iter()
-                            .skip(LEN_FIRST_ROW_KEYBOARD_RU)
-                            .take(LEN_SECOND_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(BASE_SPACE),
+        row(
+            keyboard
+                .iter()
+                .skip(LEN_FIRST_ROW_KEYBOARD_RU)
+                .take(LEN_SECOND_ROW_KEYBOARD_RU)
+                .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+        )
+        .spacing(BASE_SPACE),
 
-                    row(
-                        keyboard
-                            .iter()
-                            .skip(LEN_FIRST_ROW_KEYBOARD_RU + LEN_SECOND_ROW_KEYBOARD_RU)
-                            .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
-                    )
-                    .spacing(BASE_SPACE),
-                ].spacing(BASE_SPACE).into()
+        row(
+            keyboard
+                .iter()
+                .skip(LEN_FIRST_ROW_KEYBOARD_RU + LEN_SECOND_ROW_KEYBOARD_RU)
+                .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
+        )
+        .spacing(BASE_SPACE),
+    ].spacing(BASE_SPACE).into()
 }
 
 impl Wordly{
@@ -238,11 +237,6 @@ impl WordlyGame{
     }
     pub fn update(&mut self, message: WordlyMessage){
         match message {
-            WordlyMessage::InputChanged(txt) => {
-                if txt.graphemes(true).count() <= 5 {
-                    self.current_input = txt;
-                }
-            },
             WordlyMessage::SubmitAttempt =>{
                 // create new attempt
                 if self.current_input.graphemes(true).count() == 5 {
@@ -271,6 +265,14 @@ impl WordlyGame{
                     for _ in 0..self.graphemes_count { self.current_input.push(' '); }
                 }
             },
+            WordlyMessage::KeyboardClicked(sym) => {
+                self.current_input = replace_by_index(&mut self.current_input,
+                                                      self.cursor,
+                                                      &sym);
+                if self.cursor < self.graphemes_count - 1 {
+                    self.cursor += 1;
+                }
+            }
             _ => {
             }
         }
@@ -315,8 +317,8 @@ impl WordlyGame{
 pub enum WordlyMessage {
     GoHome,
     GoPlay,
-    InputChanged(String),
     SubmitAttempt,
+    KeyboardClicked(String)
 }
 
 #[derive(Debug, Clone, Default)]

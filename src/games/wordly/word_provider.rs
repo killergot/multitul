@@ -1,4 +1,3 @@
-use std::fs;
 use std::fs::read_to_string;
 use rand::Rng;
 

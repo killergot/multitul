@@ -2,7 +2,7 @@ mod menu;
 
 mod word_provider;
 mod attempt;
-mod styles;
+pub mod styles;
 mod consts;
 mod mark;
 

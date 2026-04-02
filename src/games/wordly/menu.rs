@@ -176,22 +176,18 @@ impl Wordly{
                 self.proccess_game = WordlyGame::new();
             },
             WordlyMessage::SubmitAttempt => {
-                if self.proccess_game.current_input == self.proccess_game.word{
-                    self.state = WordlyState::FinishedWin;
+                if self.all_worlds.len() == 0{
+                    self.all_worlds = WordProvider::get_all_wards();
+                }
+                if self.all_worlds.contains(&self.proccess_game.current_input) {
                     self.proccess_game.update(message);
                 }
-                else if self.proccess_game.attempts.len() == 5{
+                if self.proccess_game.current_input == self.proccess_game.word{
+                    self.state = WordlyState::FinishedWin;
+                }
+                else if self.proccess_game.attempts.len() == MAX_ATTEMPTS{
                     self.state = WordlyState::FinishedLose;
                 }
-                else{
-                    if self.all_worlds.len() == 0{
-                        self.all_worlds = WordProvider::get_all_wards();
-                    }
-                    if self.all_worlds.contains(&self.proccess_game.current_input) {
-                        self.proccess_game.update(message);
-                    }
-                }
-
             }
             _ => {self.proccess_game.update(message);}
         }

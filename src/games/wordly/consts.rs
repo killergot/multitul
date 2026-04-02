@@ -8,3 +8,7 @@ pub const LEN_SECOND_ROW_KEYBOARD_RU: usize = 11;
 
 
 pub const BASE_SPACE: u32 = 5;
+
+
+
+pub const MAX_ATTEMPTS: usize = 6;

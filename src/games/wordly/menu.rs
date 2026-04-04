@@ -23,7 +23,7 @@ fn key_widget<'a>(symbol: &'a str, mark: Mark) -> Element<'a, WordlyMessage> {
         .height(KEY_WIDGET_SIZE)
         .width(KEY_WIDGET_SIZE)
         .style(move |theme, status| styles::keyboard_button_style(theme, status, mark))
-        .on_press(WordlyMessage::KeyboardClicked(symbol.to_string()))
+        .on_press(WordlyMessage::KeyboardSymbolClicked(symbol.to_string()))
         .into()
 }
 
@@ -107,6 +107,8 @@ fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyM
                 .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark))
         )
         .spacing(BASE_SPACE),
+        row![button(text("submit")).on_press(WordlyMessage::SubmitAttempt),
+            button(text("<- Backspace")).on_press(WordlyMessage::BackspaceClicked)],
     ].spacing(BASE_SPACE).into()
 }
 
@@ -163,7 +165,6 @@ impl Wordly{
             KeyMessage::Char(ch) => self.proccess_game.insert_char(ch),
             KeyMessage::Enter => self.update(WordlyMessage::SubmitAttempt),
             KeyMessage::Backspace => self.proccess_game.backspace(),
-
             _ => {}
         }
     }
@@ -265,13 +266,16 @@ impl WordlyGame{
                     for _ in 0..self.graphemes_count { self.current_input.push(' '); }
                 }
             },
-            WordlyMessage::KeyboardClicked(sym) => {
+            WordlyMessage::KeyboardSymbolClicked(sym) => {
                 self.current_input = replace_by_index(&mut self.current_input,
                                                       self.cursor,
                                                       &sym);
                 if self.cursor < self.graphemes_count - 1 {
                     self.cursor += 1;
                 }
+            },
+            WordlyMessage::BackspaceClicked => {
+                self.backspace();
             }
             _ => {
             }
@@ -318,7 +322,8 @@ pub enum WordlyMessage {
     GoHome,
     GoPlay,
     SubmitAttempt,
-    KeyboardClicked(String)
+    BackspaceClicked,
+    KeyboardSymbolClicked(String)
 }
 
 #[derive(Debug, Clone, Default)]

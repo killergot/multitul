@@ -2,8 +2,7 @@ mod games;
 use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::{Element, Theme, widget::{button, column, text}, Length};
-use iced::application::UpdateFn;
-use iced::widget::container;
+use iced::widget::{container, stack};
 use iced::{event, keyboard, Event, Subscription};
 use iced::keyboard::key::Named;
 use iced::keyboard::Key;
@@ -17,6 +16,13 @@ fn main() -> iced::Result {
 
 struct App {
     screen: Screen
+}
+
+fn sign_widget<'a>() -> Element<'a, Message> {
+    column![
+        text("Multitul"),
+        text("by @rubi_ck")
+    ].into()
 }
 
 impl App {
@@ -111,12 +117,13 @@ impl App {
                 .padding(20)
                 .into(),
         };
-        container(content)
+        stack![container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x(Length::Fill)
-            .center_y(Length::Fill)
-            .into()
+            .center_y(Length::Fill),
+            sign_widget()
+        ].into()
     }
 }
 #[derive(Debug, Clone)]

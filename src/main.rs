@@ -1,6 +1,8 @@
 mod games;
 mod core;
 mod utils;
+
+use std::path::PathBuf;
 use crate::utils::git::GitProvider;
 
 use crate::games::wordly::{Wordly, WordlyMessage};
@@ -18,7 +20,8 @@ fn main(){
     info!("Hello, world!");
 
     let test = GitProvider::new(".git");
-    test.get_all_branches();
+    let branches = test.get_all_branches();
+    test._get_commit_by_branch(branches.get(0).unwrap().clone());
 }
 // fn main() -> iced::Result {
 //     iced::application(App::new, App::update, App::view)

@@ -15,19 +15,28 @@ impl GitProvider {
         }
     }
 
-    pub fn get_all_branches(&self){
+    pub fn _get_commit_by_branch(&self, branch: PathBuf){
+        let commit = fs::read_to_string(&branch).unwrap();
+        info!(target: "git", "Reading commit {}", &commit);
+    }
+
+
+    pub fn get_all_branches(&self) -> Vec<PathBuf>{
         let mut branches: Vec<PathBuf> = Vec::new();
         let local_branch = self.main_path.join("refs/heads/");
         if self.verbose {
             info!("Listing local branches:");
         }
         self._get_all_branches(local_branch.as_path(),&mut branches);
-        for branch in branches{
-            info!("{}", branch.display());
+        for branch in &branches{
+            if self.verbose {
+                info!("{}", branch.display());
+            }
         }
+        branches
     }
 
-    pub fn _get_all_branches<'a>(&self, subpath: &'a Path, branches: &'a mut Vec<PathBuf>) {
+    fn _get_all_branches<'a>(&self, subpath: &'a Path, branches: &'a mut Vec<PathBuf>) {
         if subpath.is_dir(){
             if let Ok(entries) = fs::read_dir(subpath) {
                 for entry in entries{

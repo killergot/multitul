@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::fs;
 use log::info;
+use std::io::Read;
+
+use flate2::read::ZlibDecoder;
 
 pub struct GitProvider {
     main_path: PathBuf,
@@ -16,8 +19,22 @@ impl GitProvider {
     }
 
     pub fn _get_commit_by_branch(&self, branch: PathBuf){
-        let commit = fs::read_to_string(&branch).unwrap();
-        info!(target: "git", "Reading commit {}", &commit);
+        let commit_uid = fs::read_to_string(&branch).unwrap();
+        let commit_uid = commit_uid.trim();
+
+        info!(target: "git", "Reading commit {}", &commit_uid);
+
+        let dir_commit = self.main_path.join("objects").join(&commit_uid[0..2]);
+        let compressed = fs::read(&dir_commit.join(&commit_uid[2..]))
+            .expect("Failed to read commit file");
+
+        let mut decoder = ZlibDecoder::new(&compressed[..]);
+        let mut decoded = String::new();
+        decoder
+            .read_to_string(&mut decoded)
+            .expect("Failed to decompress commit object");
+
+        info!(target: "git", "Found commit {}", decoded);
     }
 
 

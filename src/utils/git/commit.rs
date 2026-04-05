@@ -2,7 +2,7 @@ use crate::utils::git::hash::Hash;
 
 #[derive(Debug,Clone)]
 pub struct Commit {
-    hash: String,
+    hash: Hash,
     header: String,
     parent_hashes: Vec<Hash>,
     author: String,
@@ -11,7 +11,7 @@ pub struct Commit {
 }
 
 impl Commit {
-    pub fn new(hash: String, raw: String) -> Commit {
+    pub fn new(hash:impl Into<Hash>, raw: String) -> Commit {
         let mut lines = raw.lines();
 
         let mut header = String::new();
@@ -27,7 +27,7 @@ impl Commit {
             if line.starts_with("commit ") {
                 header = line[5..].to_string();
             } else if line.starts_with("parent ") {
-                parent_hashes.push(line[7..].to_string());
+                parent_hashes.push(line[7..].into());
             } else if line.starts_with("author ") {
                 author = line[7..].to_string();
             } else if line.starts_with("committer ") {
@@ -38,7 +38,7 @@ impl Commit {
         let message = lines.collect::<Vec<_>>().join("\n");
 
         Commit {
-            hash,
+            hash: hash.into(),
             header,
             parent_hashes,
             author,

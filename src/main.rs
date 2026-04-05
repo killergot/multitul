@@ -1,6 +1,7 @@
 mod games;
 mod core;
 mod utils;
+mod macros;
 
 use std::path::PathBuf;
 use crate::utils::git::GitProvider;

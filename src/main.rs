@@ -1,4 +1,8 @@
 mod games;
+mod core;
+mod utils;
+mod main_test;
+
 use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::{Element, Theme, widget::{button, column, text}, Length};

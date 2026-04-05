@@ -1,0 +1,27 @@
+use std::path::{Path, PathBuf};
+use std::fs;
+
+pub struct GitProvider {
+    main_path: PathBuf,
+}
+
+impl GitProvider {
+    pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
+        GitProvider {
+            main_path: main_path.as_ref().to_path_buf(),
+        }
+    }
+
+    pub fn get_all_branches(&self){
+        let mut branches: Vec<String> = Vec::new();
+        let local_branch = self.main_path.join("refs/heads/");
+    }
+
+    pub fn _get_all_branches(&self, subpath: &Path){
+        if subpath.is_dir(){
+            for i in subpath.read_dir(){
+
+            }
+        }
+    }
+}

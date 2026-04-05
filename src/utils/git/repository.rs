@@ -11,3 +11,9 @@ pub struct Repository {
     pub refs: HashMap<RefName, GitRef>,
     pub head: Option<GitRef>,
 }
+
+impl Repository {
+    pub fn new() -> Self {
+        Repository::default()
+    }
+}

@@ -6,9 +6,11 @@ use std::io::Read;
 use super::commit::Commit;
 
 use flate2::read::ZlibDecoder;
+use crate::utils::git::repository::Repository;
 
 pub struct GitProvider {
     main_path: PathBuf,
+    repository: Repository,
     verbose: bool,
 }
 
@@ -16,6 +18,7 @@ impl GitProvider {
     pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
         GitProvider {
             main_path: main_path.as_ref().to_path_buf(),
+            repository: Repository::new(),
             verbose: false,
         }
     }
@@ -36,7 +39,6 @@ impl GitProvider {
             .read_to_string(&mut decoded)
             .expect("Failed to decompress commit object");
 
-        info!(target: "git", "Decompressed commit \n{}", decoded);
         let mut commit = Commit::new(commit_uid.to_string(), decoded);
         info!(target: "git", "Decompressed commit \n{:?}", commit);
     }

@@ -39,7 +39,6 @@ impl GitProvider {
         info!(target: "git", "Decompressed commit \n{}", decoded);
         let mut commit = Commit::new(commit_uid.to_string(), decoded);
         info!(target: "git", "Decompressed commit \n{:?}", commit);
-
     }
 
 

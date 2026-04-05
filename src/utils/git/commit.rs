@@ -1,11 +1,13 @@
+use crate::utils::git::hash::Hash;
+
 #[derive(Debug,Clone)]
 pub struct Commit {
     hash: String,
     header: String,
-    parents: Vec<String>,
+    parent_hashes: Vec<Hash>,
     author: String,
     committer: String,
-    message: String,
+    message: String
 }
 
 impl Commit {
@@ -13,7 +15,7 @@ impl Commit {
         let mut lines = raw.lines();
 
         let mut header = String::new();
-        let mut parents = Vec::new();
+        let mut parent_hashes = Vec::new();
         let mut author = String::new();
         let mut committer = String::new();
 
@@ -25,7 +27,7 @@ impl Commit {
             if line.starts_with("commit ") {
                 header = line[5..].to_string();
             } else if line.starts_with("parent ") {
-                parents.push(line[7..].to_string());
+                parent_hashes.push(line[7..].to_string());
             } else if line.starts_with("author ") {
                 author = line[7..].to_string();
             } else if line.starts_with("committer ") {
@@ -33,13 +35,12 @@ impl Commit {
             }
         }
 
-        // всё остальное — message
         let message = lines.collect::<Vec<_>>().join("\n");
 
         Commit {
             hash,
             header,
-            parents,
+            parent_hashes,
             author,
             committer,
             message,

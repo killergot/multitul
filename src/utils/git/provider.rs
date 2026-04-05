@@ -17,6 +17,9 @@ impl GitProvider {
     pub fn get_all_branches(&self){
         let mut branches: Vec<String> = Vec::new();
         let local_branch = self.main_path.join("refs/heads/");
+        if self.verbose {
+            println!("Listing local branches:");
+        }
         self._get_all_branches(local_branch.as_path());
     }
 

@@ -6,6 +6,7 @@ use std::io::Read;
 use super::commit::Commit;
 
 use flate2::read::ZlibDecoder;
+use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
@@ -27,18 +28,18 @@ impl GitProvider {
         }
     }
 
-    pub fn get_head(&self) -> GitRef{
-        let target = fs::read_to_string(self.main_path.join("HEAD")).unwrap();
-        if target.contains("/"){
-            GitRef::new("HEAD", RefName(target))
-        }
-        else {
-            GitRef::new("HEAD",
-                        Hash(target))
+    pub fn get_head(&self) -> GitRef {
+        let content = fs::read_to_string(self.main_path.join("HEAD")).unwrap();
+        let content = content.trim();
+
+        if let Some(rest) = content.strip_prefix("ref: ") {
+            GitRef::new("HEAD", RefName::from(rest))
+        } else {
+            GitRef::new("HEAD", Hash::from(content))
         }
     }
 
-    pub fn _get_commit_by_branch(&self, branch: PathBuf){
+    pub fn _get_commit_by_branch(&self, branch: &Path) -> Result<Commit, GitError> {
         let commit_uid = fs::read_to_string(&branch).unwrap();
         let commit_uid = commit_uid.trim();
 
@@ -54,8 +55,10 @@ impl GitProvider {
             .read_to_string(&mut decoded)
             .expect("Failed to decompress commit object");
 
+        // Нужно будет добавить нормальную обработку ошибок
         let mut commit = Commit::new(commit_uid.to_string(), decoded);
-        info!(target: "git", "Decompressed commit \n{:?}", commit);
+        info!(target: "git", "Decoding commit {:?}", &commit);
+        Ok(commit)
     }
 
 

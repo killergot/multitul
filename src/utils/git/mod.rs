@@ -5,5 +5,6 @@ mod ref_name;
 mod hash;
 mod git_ref;
 mod ref_target;
+mod git_error;
 
 pub use self::provider::GitProvider;

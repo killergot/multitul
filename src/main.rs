@@ -22,7 +22,7 @@ fn main(){
 
     let test = GitProvider::new(".git");
     let branches = test.get_all_branches();
-    test._get_commit_by_branch(branches.get(0).unwrap().clone());
+    test._get_commit_by_branch(branches.get(0).unwrap());
 }
 // fn main() -> iced::Result {
 //     iced::application(App::new, App::update, App::view)

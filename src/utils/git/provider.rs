@@ -15,13 +15,22 @@ impl GitProvider {
     pub fn get_all_branches(&self){
         let mut branches: Vec<String> = Vec::new();
         let local_branch = self.main_path.join("refs/heads/");
+        self._get_all_branches(local_branch.as_path());
     }
 
     pub fn _get_all_branches(&self, subpath: &Path){
         if subpath.is_dir(){
-            for i in subpath.read_dir(){
-
+            if let Ok(entries) = fs::read_dir(subpath) {
+                for entry in entries{
+                    if let Ok(entry) = entry {
+                        let path = entry.path();
+                        self._get_all_branches(&path);
+                    }
+                }
             }
+        }
+        else if subpath.is_file(){
+            println!("{}", subpath.display());
         }
     }
 }

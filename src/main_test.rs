@@ -5,5 +5,6 @@ use crate::utils::git::GitProvider;
 fn main(){
     println!("Hello, world!");
 
-    GitProvider::new(".");
+    let test = GitProvider::new(".git");
+    test.get_all_branches();
 }

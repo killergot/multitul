@@ -3,12 +3,14 @@ use std::fs;
 
 pub struct GitProvider {
     main_path: PathBuf,
+    verbose: bool,
 }
 
 impl GitProvider {
     pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
         GitProvider {
             main_path: main_path.as_ref().to_path_buf(),
+            verbose: true,
         }
     }
 
@@ -30,7 +32,9 @@ impl GitProvider {
             }
         }
         else if subpath.is_file(){
-            println!("{}", subpath.display());
+            if self.verbose{
+                println!("{}", subpath.display());
+            }
         }
     }
 }

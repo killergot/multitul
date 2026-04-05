@@ -3,6 +3,8 @@ use std::fs;
 use log::info;
 use std::io::Read;
 
+use super::commit::Commit;
+
 use flate2::read::ZlibDecoder;
 
 pub struct GitProvider {
@@ -34,7 +36,10 @@ impl GitProvider {
             .read_to_string(&mut decoded)
             .expect("Failed to decompress commit object");
 
-        info!(target: "git", "Found commit {}", decoded);
+        info!(target: "git", "Decompressed commit \n{}", decoded);
+        let mut commit = Commit::new(commit_uid.to_string(), decoded);
+        info!(target: "git", "Decompressed commit \n{:?}", commit);
+
     }
 
 

@@ -1,7 +1,7 @@
 mod games;
 mod core;
 mod utils;
-mod main_test;
+use crate::utils::git::GitProvider;
 
 use crate::games::wordly::{Wordly, WordlyMessage};
 
@@ -11,12 +11,21 @@ use iced::{event, keyboard, Event, Subscription};
 use iced::keyboard::key::Named;
 use iced::keyboard::Key;
 
-fn main() -> iced::Result {
-    iced::application(App::new, App::update, App::view)
-        .theme(theme)
-        .subscription(App::subscription)
-        .run()
+use log::info;
+
+fn main(){
+    env_logger::init();
+    info!("Hello, world!");
+
+    let test = GitProvider::new(".git");
+    test.get_all_branches();
 }
+// fn main() -> iced::Result {
+//     iced::application(App::new, App::update, App::view)
+//         .theme(theme)
+//         .subscription(App::subscription)
+//         .run()
+// }
 
 struct App {
     screen: Screen

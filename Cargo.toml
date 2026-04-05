@@ -7,3 +7,5 @@ edition = "2024"
 iced = { version = "0.14", features = ["canvas"] }
 unicode-segmentation = "1.12.0"
 rand = "0.8"
+log = "0.4"
+env_logger = "0.11"

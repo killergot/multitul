@@ -26,11 +26,7 @@ impl GitStorage {
         }
     }
 
-    pub fn full_scan(&mut self){
-        let branches = self.get_all_branches();
-    }
-
-    pub fn get_head(&self) -> GitRef {
+    pub fn read_head(&self) -> GitRef {
         let content = fs::read_to_string(self.main_path.join("HEAD")).unwrap();
         let content = content.trim();
 
@@ -42,7 +38,7 @@ impl GitStorage {
     }
 
 
-    pub fn _get_commit_by_hash(&self, hash: &str) -> Option<String> {
+    pub fn get_commit_by_hash(&self, hash: &str) -> Option<String> {
         let dir_commit = self.main_path.join("objects").join(&hash[0..2]);
         let compressed = fs::read(&dir_commit.join(&hash[2..]))
             .expect("Failed to read commit file");
@@ -55,13 +51,13 @@ impl GitStorage {
         Some(decoded)
     }
 
-    pub fn _get_commit_by_branch(&self, branch: &Path) -> Result<Commit, String> {
-        let commit_uid = fs::read_to_string(&branch).unwrap();
+    pub fn get_commit_by_refs(&self, refs: &Path) -> Result<Commit, String> {
+        let commit_uid = fs::read_to_string(&refs).unwrap();
         let commit_uid = commit_uid.trim();
 
         info!(target: "git", "Reading commit {}", &commit_uid);
 
-        if let Some(raw_commit) = self._get_commit_by_hash(commit_uid){
+        if let Some(raw_commit) = self.get_commit_by_hash(commit_uid){
             let mut commit = Commit::new(commit_uid.to_string(), raw_commit);
             info!(target: "git", "Decoding commit {:?}", &commit);
             Ok(commit)
@@ -71,13 +67,13 @@ impl GitStorage {
     }
 
 
-    pub fn get_all_branches(&self) -> Vec<PathBuf>{
+    pub fn get_all_refs(&self) -> Vec<PathBuf>{
         let mut branches: Vec<PathBuf> = Vec::new();
         let local_branch = self.main_path.join("refs/heads/");
         if self.verbose {
             info!("Listing local branches:");
         }
-        self._get_all_branches(local_branch.as_path(),&mut branches);
+        self._get_all_refs(local_branch.as_path(),&mut branches);
         for branch in &branches{
             if self.verbose {
                 info!("{}", branch.display());
@@ -86,13 +82,13 @@ impl GitStorage {
         branches
     }
 
-    fn _get_all_branches<'a>(&self, subpath: &'a Path, branches: &'a mut Vec<PathBuf>) {
+    fn _get_all_refs<'a>(&self, subpath: &'a Path, branches: &'a mut Vec<PathBuf>) {
         if subpath.is_dir(){
             if let Ok(entries) = fs::read_dir(subpath) {
                 for entry in entries{
                     if let Ok(entry) = entry {
                         let path = entry.path();
-                        self._get_all_branches(&path, branches);
+                        self._get_all_refs(&path, branches);
                     }
                 }
             }

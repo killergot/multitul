@@ -8,6 +8,7 @@ use super::commit::Commit;
 use flate2::read::ZlibDecoder;
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
+use crate::utils::git::GitStorage;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
@@ -16,6 +17,7 @@ use crate::utils::git::repository::{Repository};
 pub struct GitProvider {
     main_path: PathBuf,
     repository: Repository,
+    storage: GitStorage,
     verbose: bool,
 }
 
@@ -24,10 +26,12 @@ impl GitProvider {
         GitProvider {
             main_path: main_path.as_ref().to_path_buf(),
             repository: Repository::new(),
+            storage: GitStorage::new(".git"),
             verbose: false,
         }
     }
 
     pub fn scan_repository(&mut self){
+        let refs = self.storage.get_all_refs();
     }
 }

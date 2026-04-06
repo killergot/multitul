@@ -21,8 +21,8 @@ fn main(){
     info!("Hello, world!");
 
     let test = GitStorage::new(".git");
-    let branches = test.get_all_branches();
-    test._get_commit_by_branch(branches.get(0).unwrap());
+    let refs = test.get_all_refs();
+    test.get_commit_by_refs(refs.get(0).unwrap());
 }
 // fn main() -> iced::Result {
 //     iced::application(App::new, App::update, App::view)

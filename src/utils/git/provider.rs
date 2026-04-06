@@ -40,10 +40,10 @@ impl GitProvider {
                 .or_insert(Commit::new(row_commit.0,row_commit.1));
         }
         let head = self.storage.read_head()?;
-        let head = if let Some(rest) = head.strip_prefix("ref: ") {
-            GitRef::new("HEAD", RefName::from(rest))
+        self.repository.head = if let Some(rest) = head.strip_prefix("ref: ") {
+            Some(GitRef::new("HEAD", RefName::from(rest.trim())))
         } else {
-            GitRef::new("HEAD", Hash::from(head))
+            Some(GitRef::new("HEAD", Hash::from(head.trim())))
         };
         Ok(())
     }

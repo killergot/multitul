@@ -31,7 +31,22 @@ impl GitProvider {
         }
     }
 
-    pub fn scan_repository(&mut self){
-        let refs = self.storage.get_all_refs();
+    pub fn scan_repository(&mut self) -> Result<(), GitError> {
+        let mut refs = self.storage.get_all_refs();
+        for i in refs.iter_mut() {
+
+        }
+
+
+        let head = self.storage.read_head()?;
+        let head = if let Some(rest) = head.strip_prefix("ref: ") {
+            GitRef::new("HEAD", RefName::from(rest))
+        } else {
+            GitRef::new("HEAD", Hash::from(head))
+        };
+
+
+
+        Ok(())
     }
 }

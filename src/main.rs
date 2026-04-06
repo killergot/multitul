@@ -15,6 +15,7 @@ use iced::keyboard::key::Named;
 use iced::keyboard::Key;
 
 use log::info;
+use crate::utils::git::commit::Commit;
 
 fn main(){
     env_logger::init();
@@ -22,7 +23,9 @@ fn main(){
 
     let test = GitStorage::new(".git");
     let refs = test.get_all_refs();
-    test.get_commit_by_refs(refs.get(0).unwrap());
+    let raw_commit = test.read_commit_by_refs(refs.get(0).unwrap()).expect("cannot read commit");
+    let commit = Commit::new(raw_commit.0, raw_commit.1);
+    info!(target: "git", "Decoding commit {:?}", &commit);
 }
 // fn main() -> iced::Result {
 //     iced::application(App::new, App::update, App::view)

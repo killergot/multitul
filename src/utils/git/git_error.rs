@@ -19,5 +19,12 @@ impl fmt::Display for GitError {
             GitError::DecompressionError(s) => write!(f, "Decompression failed: {}", s),
             GitError::NotFound(s) => write!(f, "Not found: {}", s),
         }
+
+    }
+}
+
+impl From<io::Error> for GitError {
+    fn from(err: io::Error) -> Self {
+        GitError::Io(err)
     }
 }

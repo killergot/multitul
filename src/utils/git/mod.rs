@@ -1,5 +1,5 @@
 pub mod provider;
-mod commit;
+pub mod commit;
 mod repository;
 mod ref_name;
 mod hash;

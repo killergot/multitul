@@ -26,44 +26,31 @@ impl GitStorage {
         }
     }
 
-    pub fn read_head(&self) -> GitRef {
-        let content = fs::read_to_string(self.main_path.join("HEAD")).unwrap();
-        let content = content.trim();
-
-        if let Some(rest) = content.strip_prefix("ref: ") {
-            GitRef::new("HEAD", RefName::from(rest))
-        } else {
-            GitRef::new("HEAD", Hash::from(content))
-        }
+    pub fn read_head(&self) -> Result<String, GitError> {
+        let content = fs::read_to_string(self.main_path.join("HEAD"))?;
+        Ok(content)
     }
 
 
-    pub fn get_commit_by_hash(&self, hash: &str) -> Option<String> {
+    pub fn get_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
         let dir_commit = self.main_path.join("objects").join(&hash[0..2]);
-        let compressed = fs::read(&dir_commit.join(&hash[2..]))
-            .expect("Failed to read commit file");
+        let compressed = fs::read(&dir_commit.join(&hash[2..]))?;
 
         let mut decoder = ZlibDecoder::new(&compressed[..]);
         let mut decoded = String::new();
         decoder
-            .read_to_string(&mut decoded)
-            .expect("Failed to decompress commit object");
-        Some(decoded)
+            .read_to_string(&mut decoded)?;
+        Ok(decoded)
     }
 
-    pub fn get_commit_by_refs(&self, refs: &Path) -> Result<Commit, String> {
-        let commit_uid = fs::read_to_string(&refs).unwrap();
+    pub fn read_commit_by_refs(&self, refs: &Path) -> Result<(String,String), GitError> {
+        let commit_uid = fs::read_to_string(&refs)?;
         let commit_uid = commit_uid.trim();
 
         info!(target: "git", "Reading commit {}", &commit_uid);
 
-        if let Some(raw_commit) = self.get_commit_by_hash(commit_uid){
-            let mut commit = Commit::new(commit_uid.to_string(), raw_commit);
-            info!(target: "git", "Decoding commit {:?}", &commit);
-            Ok(commit)
-        } else{
-            Err(format!("Failed to find commit {}", commit_uid))
-        }
+        let raw_commit = self.get_commit_by_hash(commit_uid)?;
+        Ok((commit_uid.to_string(),raw_commit))
     }
 
 

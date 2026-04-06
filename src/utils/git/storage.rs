@@ -33,7 +33,15 @@ impl GitStorage {
 
 
     pub fn get_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
-        let dir_commit = self.main_path.join("objects").join(&hash[0..2]);
+        if hash.len() < 2 {
+            return Err(GitError::InvalidObject("Hash is too short".to_string()));
+        }
+
+        let dir_commit = self
+            .main_path
+            .join("objects")
+            .join(&hash[0..2]);
+
         let compressed = fs::read(&dir_commit.join(&hash[2..]))?;
 
         let mut decoder = ZlibDecoder::new(&compressed[..]);

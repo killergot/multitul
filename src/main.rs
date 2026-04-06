@@ -4,7 +4,7 @@ mod utils;
 mod macros;
 
 use std::path::PathBuf;
-use crate::utils::git::GitProvider;
+use crate::utils::git::GitStorage;
 
 use crate::games::wordly::{Wordly, WordlyMessage};
 
@@ -20,7 +20,7 @@ fn main(){
     env_logger::init();
     info!("Hello, world!");
 
-    let test = GitProvider::new(".git");
+    let test = GitStorage::new(".git");
     let branches = test.get_all_branches();
     test._get_commit_by_branch(branches.get(0).unwrap());
 }

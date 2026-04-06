@@ -25,7 +25,7 @@ impl Commit {
                 break; // конец заголовков
             }
             if line.starts_with("commit ") {
-                header = line[5..].to_string();
+                header = line.to_string();
             } else if line.starts_with("parent ") {
                 parent_hashes.push(line[7..].into());
             } else if line.starts_with("author ") {

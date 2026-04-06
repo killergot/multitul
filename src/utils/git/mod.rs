@@ -6,5 +6,6 @@ mod hash;
 mod git_ref;
 mod ref_target;
 mod git_error;
+pub mod storage;
 
-pub use self::provider::GitProvider;
+pub use self::storage::GitStorage;

@@ -33,7 +33,7 @@ fn main(){
 
     let mut temp = GitProvider::new();
     temp.scan_repository();
-    println!("{:?}", temp.repository);
+    println!("{:?}", temp.repository.head);
 }
 // fn main() -> iced::Result {
 //     iced::application(App::new, App::update, App::view)

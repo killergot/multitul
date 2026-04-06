@@ -22,22 +22,36 @@ impl GitProvider {
         }
     }
 
+    fn _scan_commit_chain(&mut self, hash: Hash) {
+        // Если коммит уже есть, то и его подцепочка, тоже должна быть
+        if !self.repository.commits.contains_key(&hash) {
+            if let Ok(commit_raw) = self.storage.read_commit_by_hash(hash.as_str()){
+                let commit = Commit::new(hash.clone(),commit_raw);
+                for i in commit.parent_hashes.iter() {
+                    self._scan_commit_chain(i.clone());
+                }
+                self.repository.commits
+                    .entry(hash)
+                    .or_insert(commit);
+            };
+        }
+    }
+
     pub fn scan_repository(&mut self) -> Result<(), GitError> {
         let mut refs = self.storage.get_all_refs();
         for path in refs.iter_mut() {
-            let row_commit = self.storage.read_commit_by_ref(path)?;
+            let commit_uid = self.storage.read_ref(path)?;
             let ref_name = RefName::from(
                 path.strip_prefix(".git")
                     .unwrap_or(path)
                     .to_string_lossy()
                     .replace('\\', "/"),
             );
+            let hash = Hash(commit_uid);
             self.repository.refs
                 .entry(ref_name.clone())
-                .or_insert(GitRef::new(ref_name,Hash(row_commit.0.clone())));
-            self.repository.commits
-                .entry(row_commit.0.clone().into())
-                .or_insert(Commit::new(row_commit.0,row_commit.1));
+                .or_insert(GitRef::new(ref_name,hash.clone()));
+            self._scan_commit_chain(hash)
         }
         let head = self.storage.read_head()?;
         self.repository.head = if let Some(rest) = head.strip_prefix("ref: ") {
@@ -47,4 +61,5 @@ impl GitProvider {
         };
         Ok(())
     }
+
 }

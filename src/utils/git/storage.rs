@@ -61,6 +61,11 @@ impl GitStorage {
         Ok((commit_uid.to_string(),raw_commit))
     }
 
+    pub fn read_ref(&self, refname: &Path) -> Result<String, GitError> {
+        let commit_uid = fs::read_to_string(refname)?;
+        Ok(commit_uid.trim().to_string())
+    }
+
 
     pub fn get_all_refs(&self) -> Vec<PathBuf>{
         let mut branches: Vec<PathBuf> = Vec::new();

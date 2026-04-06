@@ -2,12 +2,12 @@ use crate::utils::git::hash::Hash;
 
 #[derive(Debug,Clone)]
 pub struct Commit {
-    hash: Hash,
-    header: String,
-    parent_hashes: Vec<Hash>,
-    author: String,
-    committer: String,
-    message: String
+    pub hash: Hash,
+    pub header: String,
+    pub parent_hashes: Vec<Hash>,
+    pub author: String,
+    pub committer: String,
+    pub message: String
 }
 
 impl Commit {

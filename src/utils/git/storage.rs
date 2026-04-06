@@ -32,7 +32,7 @@ impl GitStorage {
     }
 
 
-    pub fn get_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
+    pub fn read_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
         if hash.len() < 2 {
             return Err(GitError::InvalidObject("Hash is too short".to_string()));
         }
@@ -51,13 +51,13 @@ impl GitStorage {
         Ok(decoded)
     }
 
-    pub fn read_commit_by_refs(&self, refs: &Path) -> Result<(String,String), GitError> {
+    pub fn read_commit_by_ref(&self, refs: &Path) -> Result<(String, String), GitError> {
         let commit_uid = fs::read_to_string(&refs)?;
         let commit_uid = commit_uid.trim();
 
         info!(target: "git", "Reading commit {}", &commit_uid);
 
-        let raw_commit = self.get_commit_by_hash(commit_uid)?;
+        let raw_commit = self.read_commit_by_hash(commit_uid)?;
         Ok((commit_uid.to_string(),raw_commit))
     }
 

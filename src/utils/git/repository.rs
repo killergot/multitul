@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::git_ref::GitRef;
-
-pub type Hash = String;
-pub type RefName = String;
+use crate::utils::git::hash::Hash;
+use crate::utils::git::ref_name::RefName;
 
 #[derive(Debug, Default)]
 pub struct Repository {

@@ -7,5 +7,6 @@ mod git_ref;
 mod ref_target;
 mod git_error;
 pub mod storage;
+mod graph;
 
 pub use self::storage::GitStorage;

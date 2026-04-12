@@ -1,12 +1,27 @@
-use iced::{Background, Border, Color, Shadow, Theme, Vector, widget::{button, container}};
 use crate::games::wordly::mark::Mark;
+use iced::{
+    Background, Border, Color, Shadow, Theme, Vector,
+    widget::{button, container},
+};
 
 fn palette_by_mark(mark: Mark) -> (Color, Color) {
     match mark {
-        Mark::Correct => (Color::from_rgb(0.4, 0.0, 0.4), Color::from_rgb(0.1, 0.8, 0.3)),
-        Mark::Present => (Color::from_rgb(0.0, 0.0, 0.2), Color::from_rgb(0.0, 0.8, 0.0)),
-        Mark::Absent => (Color::from_rgb(0.1, 0.1, 0.1), Color::from_rgb(0.0, 0.0, 0.0)),
-        Mark::Cursor => (Color::from_rgb(0.0, 0.0, 0.15), Color::from_rgb(0.2, 0.0, 0.2)),
+        Mark::Correct => (
+            Color::from_rgb(0.4, 0.0, 0.4),
+            Color::from_rgb(0.1, 0.8, 0.3),
+        ),
+        Mark::Present => (
+            Color::from_rgb(0.0, 0.0, 0.2),
+            Color::from_rgb(0.0, 0.8, 0.0),
+        ),
+        Mark::Absent => (
+            Color::from_rgb(0.1, 0.1, 0.1),
+            Color::from_rgb(0.0, 0.0, 0.0),
+        ),
+        Mark::Cursor => (
+            Color::from_rgb(0.0, 0.0, 0.15),
+            Color::from_rgb(0.2, 0.0, 0.2),
+        ),
         Mark::Unknown => (Color::TRANSPARENT, Color::from_rgb(0.12, 0.12, 0.1)),
     }
 }
@@ -40,7 +55,7 @@ pub fn marked_cell_style(mark: Mark) -> container::Style {
                 radius: 6.0.into(),
             },
             ..Default::default()
-        }
+        },
     }
 }
 

@@ -1,9 +1,9 @@
 mod menu;
 
-mod word_provider;
 mod attempt;
-mod styles;
 mod consts;
 mod mark;
+mod styles;
+mod word_provider;
 
 pub use menu::{Wordly, WordlyMessage};

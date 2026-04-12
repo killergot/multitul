@@ -7,4 +7,3 @@ pub enum Mark {
     #[default]
     Unknown,
 }
-

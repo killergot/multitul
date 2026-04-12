@@ -10,3 +10,4 @@ pub mod storage;
 mod graph;
 
 pub use self::storage::GitStorage;
+pub use self::graph::GitGraph;

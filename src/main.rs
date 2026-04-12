@@ -5,6 +5,7 @@ mod macros;
 
 use std::path::PathBuf;
 use crate::utils::git::GitStorage;
+use crate::utils::git::GitGraph;
 
 use crate::games::wordly::{Wordly, WordlyMessage};
 
@@ -33,6 +34,8 @@ fn main(){
 
     let mut temp = GitProvider::new();
     temp.scan_repository();
+    let mut gr = GitGraph::new(&temp.repository.commits);
+    println!("{:#?}", gr.init_node);
     println!("{:?}   {}", temp.repository.head, temp.repository.commits.len());
 }
 // fn main() -> iced::Result {

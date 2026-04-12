@@ -1,8 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
-use crate::utils::git::ref_name::RefName;
-use crate::utils::git::repository::Repository;
 
 #[derive(Debug,Clone)]
 pub struct Node{
@@ -14,6 +13,14 @@ pub struct Node{
 impl Node {
     pub fn new(id: Hash) -> Node {
         Node{id, parents: Vec::new(), children: Vec::new()}
+    }
+
+    pub fn parents(&self) -> &[Hash] {
+        &self.parents
+    }
+
+    pub fn children(&self) -> &[Hash] {
+        &self.children
     }
 }
 
@@ -55,5 +62,17 @@ impl GitGraph {
             nodes: checked_nodes,
             init_node: init_node
         }
+    }
+
+    pub fn node(&self, hash: &Hash) -> Option<&Node> {
+        self.nodes.get(hash)
+    }
+
+    pub fn children_of(&self, hash: &Hash) -> &[Hash] {
+        self.node(hash).map(Node::children).unwrap_or(&[])
+    }
+
+    pub fn parents_of(&self, hash: &Hash) -> &[Hash] {
+        self.node(hash).map(Node::parents).unwrap_or(&[])
     }
 }

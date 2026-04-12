@@ -3,7 +3,7 @@ mod games;
 mod utils;
 mod macros;
 
-use std::path::PathBuf;
+use crate::core::git_graph_view::GitGraphView;
 use crate::utils::git::GitStorage;
 use crate::utils::git::GitGraph;
 
@@ -22,6 +22,7 @@ use log::info;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::provider::GitProvider;
 
+#[allow(dead_code)]
 fn main_git(){
     env_logger::init();
     info!("Hello, world!");
@@ -36,8 +37,8 @@ fn main_git(){
     println!();
 
     let mut temp = GitProvider::new();
-    temp.scan_repository();
-    let mut gr = GitGraph::new(&temp.repository.commits);
+    let _ = temp.scan_repository();
+    let gr = GitGraph::new(&temp.repository.commits);
     println!("{:#?}", gr.init_node);
     println!("{:?}   {}", temp.repository.head, temp.repository.commits.len());
 }
@@ -48,7 +49,6 @@ fn main_git(){
 //         .run()
 // }
 fn main() -> iced::Result {
-    main_git();
     iced::application(App::new, App::update, App::view)
         .theme(theme)
         .subscription(App::subscription)
@@ -130,10 +130,12 @@ impl App {
             .padding(20)
             .into(),
             Screen::Wordly(wordly_game) => wordly_game.view().map(Message::Wordly),
+            Screen::GitGraph(graph) => graph.view(),
             Screen::Main => column![
                 text(format!("My multitul")),
                 button("counter").on_press(Message::SwitchTo(Screen::Counter(Counter::default()))),
                 button("wordly").on_press(Message::SwitchTo(Screen::Wordly(Wordly::default()))),
+                button("git graph").on_press(Message::SwitchTo(Screen::GitGraph(GitGraphView::new()))),
             ]
             .spacing(12)
             .padding(20)
@@ -154,6 +156,7 @@ impl App {
 enum Screen {
     Counter(Counter),
     Wordly(Wordly),
+    GitGraph(GitGraphView),
     Main,
 }
 

@@ -1,11 +1,11 @@
-use std::collections::{HashMap, HashSet};
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::repository::Repository;
+use std::collections::{HashMap, HashSet};
 
-#[derive(Debug,Clone)]
-pub struct Node{
+#[derive(Debug, Clone)]
+pub struct Node {
     id: Hash,
     parents: Vec<Hash>,
     children: Vec<Hash>,
@@ -13,19 +13,23 @@ pub struct Node{
 
 impl Node {
     pub fn new(id: Hash) -> Node {
-        Node{id, parents: Vec::new(), children: Vec::new()}
+        Node {
+            id,
+            parents: Vec::new(),
+            children: Vec::new(),
+        }
     }
 }
 
-#[derive(Debug,Clone)]
-pub struct GitGraph{
+#[derive(Debug, Clone)]
+pub struct GitGraph {
     pub nodes: HashMap<Hash, Node>,
     pub init_node: Hash,
 }
 
 impl GitGraph {
     pub fn new(commits: &HashMap<Hash, Commit>) -> Self {
-        let mut checked_nodes = HashMap::<Hash,Node>::new();
+        let mut checked_nodes = HashMap::<Hash, Node>::new();
         for (hash, commit) in commits {
             checked_nodes
                 .entry(hash.clone())
@@ -42,18 +46,17 @@ impl GitGraph {
             }
         }
 
-
         // Search initional commit for buils started graph
         // Here can use FIRST and SINGLE node, because we have a DAG graph
         let init_node = checked_nodes
             .iter()
-            .find(|(k,v)| v.parents.is_empty())
-            .map(|(k,_)| k.clone())
+            .find(|(k, v)| v.parents.is_empty())
+            .map(|(k, _)| k.clone())
             .expect("Не найден первый коммит");
 
-        GitGraph{
+        GitGraph {
             nodes: checked_nodes,
-            init_node: init_node
+            init_node: init_node,
         }
     }
 }

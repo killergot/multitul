@@ -1,17 +1,17 @@
 use crate::utils::git::hash::Hash;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Commit {
     pub hash: Hash,
     pub header: String,
     pub parent_hashes: Vec<Hash>,
     pub author: String,
     pub committer: String,
-    pub message: String
+    pub message: String,
 }
 
 impl Commit {
-    pub fn new(hash:impl Into<Hash>, raw: String) -> Commit {
+    pub fn new(hash: impl Into<Hash>, raw: String) -> Commit {
         let mut lines = raw.lines();
 
         let mut header = String::new();

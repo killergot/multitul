@@ -1,17 +1,17 @@
-use std::path::{Path, PathBuf};
-use std::fs;
 use log::info;
+use std::fs;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use super::commit::Commit;
 
-use flate2::read::ZlibDecoder;
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
-use crate::utils::git::repository::{Repository};
+use crate::utils::git::repository::Repository;
+use flate2::read::ZlibDecoder;
 
 pub struct GitStorage {
     main_path: PathBuf,
@@ -31,23 +31,18 @@ impl GitStorage {
         Ok(content)
     }
 
-
     pub fn read_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
         if hash.len() < 2 {
             return Err(GitError::InvalidObject("Hash is too short".to_string()));
         }
 
-        let dir_commit = self
-            .main_path
-            .join("objects")
-            .join(&hash[0..2]);
+        let dir_commit = self.main_path.join("objects").join(&hash[0..2]);
 
         let compressed = fs::read(&dir_commit.join(&hash[2..]))?;
 
         let mut decoder = ZlibDecoder::new(&compressed[..]);
         let mut decoded = String::new();
-        decoder
-            .read_to_string(&mut decoded)?;
+        decoder.read_to_string(&mut decoded)?;
         Ok(decoded)
     }
 
@@ -58,7 +53,7 @@ impl GitStorage {
         info!(target: "git", "Reading commit {}", &commit_uid);
 
         let raw_commit = self.read_commit_by_hash(commit_uid)?;
-        Ok((commit_uid.to_string(),raw_commit))
+        Ok((commit_uid.to_string(), raw_commit))
     }
 
     pub fn read_ref(&self, refname: &Path) -> Result<String, GitError> {
@@ -66,15 +61,14 @@ impl GitStorage {
         Ok(commit_uid.trim().to_string())
     }
 
-
-    pub fn get_all_refs(&self) -> Vec<PathBuf>{
+    pub fn get_all_refs(&self) -> Vec<PathBuf> {
         let mut branches: Vec<PathBuf> = Vec::new();
         let local_branch = self.main_path.join("refs/heads/");
         if self.verbose {
             info!("Listing local branches:");
         }
-        self._get_all_refs(local_branch.as_path(),&mut branches);
-        for branch in &branches{
+        self._get_all_refs(local_branch.as_path(), &mut branches);
+        for branch in &branches {
             if self.verbose {
                 info!("{}", branch.display());
             }
@@ -83,18 +77,17 @@ impl GitStorage {
     }
 
     fn _get_all_refs<'a>(&self, subpath: &'a Path, branches: &'a mut Vec<PathBuf>) {
-        if subpath.is_dir(){
+        if subpath.is_dir() {
             if let Ok(entries) = fs::read_dir(subpath) {
-                for entry in entries{
+                for entry in entries {
                     if let Ok(entry) = entry {
                         let path = entry.path();
                         self._get_all_refs(&path, branches);
                     }
                 }
             }
-        }
-        else if subpath.is_file(){
-            if self.verbose{
+        } else if subpath.is_file() {
+            if self.verbose {
                 info!("{}", subpath.display());
             }
             branches.push(subpath.to_path_buf());

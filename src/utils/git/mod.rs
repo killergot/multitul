@@ -1,13 +1,13 @@
-pub mod provider;
 pub mod commit;
-mod repository;
-mod ref_name;
-mod hash;
-mod git_ref;
-mod ref_target;
 mod git_error;
-pub mod storage;
+mod git_ref;
 mod graph;
+mod hash;
+pub mod provider;
+mod ref_name;
+mod ref_target;
+mod repository;
+pub mod storage;
 
-pub use self::storage::GitStorage;
 pub use self::graph::GitGraph;
+pub use self::storage::GitStorage;

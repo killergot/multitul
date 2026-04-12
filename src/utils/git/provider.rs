@@ -1,11 +1,11 @@
-use std::path::{Path, PathBuf};
+use crate::utils::git::GitStorage;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
-use crate::utils::git::GitStorage;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
-use crate::utils::git::repository::{Repository};
+use crate::utils::git::repository::Repository;
+use std::path::{Path, PathBuf};
 
 pub struct GitProvider {
     pub repository: Repository,
@@ -25,14 +25,12 @@ impl GitProvider {
     fn _scan_commit_chain(&mut self, hash: Hash) {
         // Если коммит уже есть, то и его подцепочка, тоже должна быть
         if !self.repository.commits.contains_key(&hash) {
-            if let Ok(commit_raw) = self.storage.read_commit_by_hash(hash.as_str()){
-                let commit = Commit::new(hash.clone(),commit_raw);
+            if let Ok(commit_raw) = self.storage.read_commit_by_hash(hash.as_str()) {
+                let commit = Commit::new(hash.clone(), commit_raw);
                 for i in commit.parent_hashes.iter() {
                     self._scan_commit_chain(i.clone());
                 }
-                self.repository.commits
-                    .entry(hash)
-                    .or_insert(commit);
+                self.repository.commits.entry(hash).or_insert(commit);
             };
         }
     }
@@ -48,9 +46,10 @@ impl GitProvider {
                     .replace('\\', "/"),
             );
             let hash = Hash(commit_uid);
-            self.repository.refs
+            self.repository
+                .refs
                 .entry(ref_name.clone())
-                .or_insert(GitRef::new(ref_name,hash.clone()));
+                .or_insert(GitRef::new(ref_name, hash.clone()));
             self._scan_commit_chain(hash)
         }
         let head = self.storage.read_head()?;

@@ -35,7 +35,7 @@ struct App {
 }
 
 fn sign_widget<'a>() -> Element<'a, Message> {
-    column![text("Multitul"), text("by @rubi_ck")].into()
+    column![text("Multitul"), text("by @rubi_ck @efcolipt")].into()
 }
 
 impl App {

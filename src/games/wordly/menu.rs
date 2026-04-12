@@ -214,7 +214,6 @@ struct WordlyGame {
     // later carry this out in InputState struct
     current_input: String,
     cursor: usize,
-    focused: bool,
     // We have 4 state for any char in keyboard:
     // Absent - We know it no in the word
     // Present - We know the word contains the char, but not know where
@@ -244,7 +243,6 @@ impl WordlyGame {
             attempts: vec![],
             current_input,
             cursor: 0,
-            focused: true,
             keyboard,
         }
     }

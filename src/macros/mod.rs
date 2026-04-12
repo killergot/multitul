@@ -1,0 +1,1 @@
+pub mod string_newtype_macro;

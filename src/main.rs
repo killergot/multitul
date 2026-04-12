@@ -1,7 +1,11 @@
 mod core;
 mod games;
 mod utils;
-use crate::utils::git::GitProvider;
+mod macros;
+
+use std::path::PathBuf;
+use crate::utils::git::GitStorage;
+use crate::utils::git::GitGraph;
 
 use crate::games::wordly::{Wordly, WordlyMessage};
 
@@ -15,15 +19,36 @@ use iced::{
 use iced::{Event, Subscription, event, keyboard};
 
 use log::info;
+use crate::utils::git::commit::Commit;
+use crate::utils::git::provider::GitProvider;
 
-// fn main(){
-//     env_logger::init();
-//     info!("Hello, world!");
-//
-//     let test = GitProvider::new(".git");
-//     test.get_all_branches();
+fn main_git(){
+    env_logger::init();
+    info!("Hello, world!");
+
+    let test = GitStorage::new(".git");
+    let refs = test.get_all_refs();
+    let raw_commit = test.read_commit_by_ref(refs.get(0).unwrap()).expect("cannot read commit");
+    let commit = Commit::new(raw_commit.0, raw_commit.1);
+    info!(target: "git", "Decoding commit {:?}", &commit);
+
+    println!();
+    println!();
+
+    let mut temp = GitProvider::new();
+    temp.scan_repository();
+    let mut gr = GitGraph::new(&temp.repository.commits);
+    println!("{:#?}", gr.init_node);
+    println!("{:?}   {}", temp.repository.head, temp.repository.commits.len());
+}
+// fn main() -> iced::Result {
+//     iced::application(App::new, App::update, App::view)
+//         .theme(theme)
+//         .subscription(App::subscription)
+//         .run()
 // }
 fn main() -> iced::Result {
+    main_git();
     iced::application(App::new, App::update, App::view)
         .theme(theme)
         .subscription(App::subscription)
@@ -31,7 +56,7 @@ fn main() -> iced::Result {
 }
 
 struct App {
-    screen: Screen,
+    screen: Screen
 }
 
 fn sign_widget<'a>() -> Element<'a, Message> {

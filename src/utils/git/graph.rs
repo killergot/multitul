@@ -27,19 +27,24 @@ impl GitGraph {
     pub fn new(commits: &HashMap<Hash, Commit>) -> Self {
         let mut checked_nodes = HashMap::<Hash,Node>::new();
         for (hash, commit) in commits {
-            if !checked_nodes.contains_key(hash) {
-                let mut new_node = Node::new(hash.clone());
-                for i in commit.parent_hashes.iter() {
-                    if !checked_nodes.contains_key(i) {
-                        checked_nodes.insert(i.clone(), Node::new(i.clone()));
-                    }
-                    new_node.parents.push(i.clone());
-                    checked_nodes.get_mut(i).expect("Не найдена нодка").children.push(hash.clone());
-                }
-                checked_nodes.insert(hash.clone(), new_node);
+            checked_nodes
+                .entry(hash.clone())
+                //.or_insert(Node::new(hash.clone())) не подходит, ибо она всегда вычисляет новую ноду
+                // а .or_insert_with только при надобности
+                .or_insert_with(|| Node::new(hash.clone()))
+                .parents = commit.parent_hashes.clone();
+            for parent in commit.parent_hashes.iter() {
+                checked_nodes
+                    .entry(parent.clone())
+                    .or_insert_with(|| Node::new(parent.clone()))
+                    .children
+                    .push(hash.clone());
             }
         }
 
+
+        // Search initional commit for buils started graph
+        // Here can use FIRST and SINGLE node, because we have a DAG graph
         let init_node = checked_nodes
             .iter()
             .find(|(k,v)| v.parents.is_empty())

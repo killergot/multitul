@@ -3,10 +3,6 @@ mod games;
 mod macros;
 mod utils;
 
-use crate::utils::git::GitGraph;
-use crate::utils::git::GitStorage;
-use std::path::PathBuf;
-
 use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::keyboard::Key;
@@ -18,44 +14,10 @@ use iced::{
 };
 use iced::{Event, Subscription, event, keyboard};
 
+use crate::core::git::dag::git_widget;
 use crate::core::sign::sign_widget;
-use crate::utils::git::commit::Commit;
-use crate::utils::git::provider::GitProvider;
-use log::info;
 
-fn main_git() {
-    env_logger::init();
-    info!("Hello, world!");
-
-    let test = GitStorage::new(".git");
-    let refs = test.get_all_refs();
-    let raw_commit = test
-        .read_commit_by_ref(refs.get(0).unwrap())
-        .expect("cannot read commit");
-    let commit = Commit::new(raw_commit.0, raw_commit.1);
-    info!(target: "git", "Decoding commit {:?}", &commit);
-
-    println!();
-    println!();
-
-    let mut temp = GitProvider::new();
-    temp.scan_repository();
-    let mut gr = GitGraph::new(&temp.repository.commits);
-    println!("{:#?}", gr.init_node);
-    println!(
-        "{:?}   {}",
-        temp.repository.head,
-        temp.repository.commits.len()
-    );
-}
-// fn main() -> iced::Result {
-//     iced::application(App::new, App::update, App::view)
-//         .theme(theme)
-//         .subscription(App::subscription)
-//         .run()
-// }
 fn main() -> iced::Result {
-    main_git();
     iced::application(App::new, App::update, App::view)
         .theme(theme)
         .subscription(App::subscription)
@@ -148,7 +110,18 @@ impl App {
                 .height(Length::Fill)
                 .center_x(Length::Fill)
                 .center_y(Length::Fill),
-            sign_widget()
+            container(sign_widget())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(iced::alignment::Horizontal::Right)
+                .align_y(iced::alignment::Vertical::Bottom)
+                .padding(20),
+            container(git_widget())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(iced::alignment::Horizontal::Left)
+                .align_y(iced::alignment::Vertical::Bottom)
+                .padding(20),
         ]
         .into()
     }

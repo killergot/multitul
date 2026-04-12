@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::attempt::Attempt;
@@ -9,7 +8,8 @@ use crate::KeyMessage;
 use crate::games::wordly::mark::Mark;
 use iced::widget::row;
 use iced::{
-    Element,
+    Element, Padding,
+    alignment::Horizontal,
     widget::{button, column, container, text},
 };
 
@@ -43,41 +43,46 @@ fn replace_by_index(current_input: &mut String, cursor: usize, new_sym: &str) ->
         .collect()
 }
 
-fn attempt_widget<'a>(attempts: &Vec<Attempt>) -> Element<'a, WordlyMessage> {
-    column(attempts.iter().map(|attempt| {
-        row(attempt
-            .word
-            .chars()
-            .zip(attempt.marked)
-            .map(|(char, mark)| {
-                container(text(char.to_string()))
-                    .height(CHAR_WIDGET_SIZE)
-                    .width(CHAR_WIDGET_SIZE)
-                    .center(CHAR_WIDGET_SIZE)
-                    .style(move |_| styles::marked_cell_style(mark))
-                    .into()
-            }))
-        .into()
-    }))
-    .into()
-}
-
-fn input_attempt_widget<'a>(input_text: &'a str, cursor: usize) -> Element<'a, WordlyMessage> {
-    row(input_text.graphemes(true).enumerate().map(|(i, sym)| {
-        let mark = if i == cursor {
-            Mark::Cursor
-        } else {
-            Mark::Unknown
-        };
-
-        container(text(sym))
+fn create_rows_char<'a>(
+    items: impl Iterator<Item = (&'a str, Mark)>,
+) -> Element<'a, WordlyMessage> {
+    row(items.map(|(char, mark)| {
+        container(text(char))
             .height(CHAR_WIDGET_SIZE)
             .width(CHAR_WIDGET_SIZE)
             .center(CHAR_WIDGET_SIZE)
             .style(move |_| styles::marked_cell_style(mark))
             .into()
     }))
+    .spacing(BASE_SPACE)
+    .padding(Padding {
+        bottom: BASE_SPACE as f32,
+        ..Default::default()
+    })
     .into()
+}
+
+fn attempt_widget<'a>(attempts: &'a Vec<Attempt>) -> Element<'a, WordlyMessage> {
+    column(
+        attempts
+            .iter()
+            .map(|attempt| create_rows_char(attempt.word.graphemes(true).zip(attempt.marked))),
+    )
+    .into()
+}
+
+fn input_attempt_widget<'a>(input_text: &'a str, cursor: usize) -> Element<'a, WordlyMessage> {
+    let mapped = input_text.graphemes(true).enumerate().map(|(i, sym)| {
+        let mark = if i == cursor {
+            Mark::Cursor
+        } else {
+            Mark::Unknown
+        };
+
+        (sym, mark)
+    });
+
+    create_rows_char(mapped)
 }
 
 fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyMessage> {
@@ -100,17 +105,20 @@ fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyM
         .spacing(BASE_SPACE),
         row![
             button(text("submit")).on_press(WordlyMessage::SubmitAttempt),
-            button(text("<- Backspace")).on_press(WordlyMessage::BackspaceClicked)
-        ],
+            button(text("<- Backspace")).on_press(WordlyMessage::BackspaceClicked),
+        ]
+        .padding([BASE_SPACE as u16, 0])
+        .spacing(BASE_SPACE),
     ]
     .spacing(BASE_SPACE)
+    .align_x(Horizontal::Center)
     .into()
 }
 
 impl Wordly {
     pub fn view(&self) -> Element<'_, WordlyMessage> {
         match self.state {
-            WordlyState::Menu => iced::widget::column![
+            WordlyState::Menu => column![
                 text("Wordly"),
                 button("Start game").on_press(WordlyMessage::GoPlay),
                 button("Go home").on_press(WordlyMessage::GoHome)
@@ -124,6 +132,7 @@ impl Wordly {
                 ),
                 keyboard_widget(&self.proccess_game.keyboard),
             ]
+            .align_x(Horizontal::Center)
             .into(),
             WordlyState::FinishedWin => column![
                 text("Finished"),

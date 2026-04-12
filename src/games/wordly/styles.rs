@@ -7,22 +7,25 @@ use iced::{
 fn palette_by_mark(mark: Mark) -> (Color, Color) {
     match mark {
         Mark::Correct => (
-            Color::from_rgb(0.4, 0.0, 0.4),
-            Color::from_rgb(0.1, 0.8, 0.3),
+            Color::from_rgb(0.42, 0.67, 0.39), // green fill
+            Color::from_rgb(0.42, 0.67, 0.39), // green border
         ),
         Mark::Present => (
-            Color::from_rgb(0.0, 0.0, 0.2),
-            Color::from_rgb(0.0, 0.8, 0.0),
+            Color::from_rgb(0.79, 0.71, 0.35), // yellow fill
+            Color::from_rgb(0.79, 0.71, 0.35), // yellow border
         ),
         Mark::Absent => (
-            Color::from_rgb(0.1, 0.1, 0.1),
-            Color::from_rgb(0.0, 0.0, 0.0),
+            Color::from_rgb(0.53, 0.53, 0.54), // gray fill
+            Color::from_rgb(0.53, 0.53, 0.54), // gray border
         ),
         Mark::Cursor => (
-            Color::from_rgb(0.0, 0.0, 0.15),
-            Color::from_rgb(0.2, 0.0, 0.2),
+            Color::from_rgb(0.12, 0.12, 0.10), // dark background
+            Color::from_rgb(0.35, 0.35, 0.38), // active border
         ),
-        Mark::Unknown => (Color::TRANSPARENT, Color::from_rgb(0.12, 0.12, 0.1)),
+        Mark::Unknown => (
+            Color::from_rgb(0.12, 0.12, 0.10), // empty cell
+            Color::from_rgb(0.22, 0.22, 0.20), // neutral border
+        ),
     }
 }
 

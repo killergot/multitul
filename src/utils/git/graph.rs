@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
@@ -74,7 +75,77 @@ impl GitGraph {
         }
     }
 
-    pub fn get_dag(&self)  {
+    pub fn dfs_for_layout(&self, repo: &GitRepository) -> Vec<LayoutSeed> {
+        let refs_map = repo.refs_by_hash();
+        let start_hashes = start_hashes(&self,repo);
+
+        let mut visited = HashSet::<Hash>::new();
+        let mut ordered = Vec::<LayoutSeed>::new();
+        let mut count = 0;
+
+
+        let mut stack = Vec::new();
+
+        for hash in start_hashes.iter().rev() {
+            stack.push(hash.clone());
+        }
+
+        while let Some(hash) = stack.pop() {
+            if !visited.insert(hash.clone()){
+                continue;
+            };
+
+            let node = match self.nodes.get(&hash) {
+                Some(node) => node,
+                None => continue,
+            };
+            ordered.push(LayoutSeed{
+                hash: hash.clone(),
+                row: count,
+                parents: node.parents.to_vec(),
+                refs: refs_map.get(&hash).cloned().unwrap_or_default()
+            });
+            count += 1;
+            for parent in node.parents.iter().rev() {
+                stack.push(parent.clone());
+            }
+        }
+        ordered
 
     }
+
+    pub fn bfs_for_layout(&self, repo: &GitRepository) -> Vec<LayoutSeed> {
+        let mut ordered = Vec::<LayoutSeed>::new();
+
+
+        ordered
+    }
+}
+
+fn start_hashes(graph: &GitGraph, repo: &GitRepository) -> Vec<Hash> {
+    let mut starts: Vec<Hash> = repo.refs_by_hash()
+        .into_keys()
+        .collect();
+
+    // Вдруг нет refs, то по графу берем узлы без детей
+    if starts.is_empty() {
+        starts = graph.nodes
+            .values()
+            .filter(|node| node.children().is_empty())
+            .map(|node| node.id().clone())
+            .collect();
+    }
+
+    starts.sort_by(|a, b| a.0.cmp(&b.0));
+    starts.dedup();
+    starts
+}
+
+
+#[derive(Debug, Clone)]
+pub struct LayoutSeed {
+    pub hash: Hash,
+    pub row: usize,
+    pub parents: Vec<Hash>,
+    pub refs: Vec<RefName>,
 }

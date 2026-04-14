@@ -45,7 +45,7 @@ impl App {
             screen: Screen::Main,
             git_state: GitState{
                 graph,
-                provider:provider.repository.clone()
+                repo:provider.repository.clone()
             }
         }
     }

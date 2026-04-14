@@ -5,5 +5,5 @@ use crate::utils::git::repository::GitRepository;
 #[derive(Debug,Clone)]
 pub struct GitState{
     pub graph: GitGraph,
-    pub provider: GitRepository,
+    pub repo: GitRepository,
 }

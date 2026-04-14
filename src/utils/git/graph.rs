@@ -1,8 +1,9 @@
-use std::alloc::Layout;
+use crate::Message;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::repository::GitRepository;
+use std::alloc::Layout;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
@@ -21,7 +22,6 @@ impl Node {
         }
     }
 }
-
 
 impl Node {
     pub fn id(&self) -> &Hash {
@@ -75,14 +75,13 @@ impl GitGraph {
         }
     }
 
-    pub fn dfs_for_layout(&self, repo: &GitRepository) -> Vec<LayoutSeed> {
+    pub fn dfs_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
         let refs_map = repo.refs_by_hash();
-        let start_hashes = start_hashes(&self,repo);
+        let start_hashes = start_hashes(&self, repo);
 
         let mut visited = HashSet::<Hash>::new();
-        let mut ordered = Vec::<LayoutSeed>::new();
+        let mut ordered = Vec::<GraphNodeView>::new();
         let mut count = 0;
-
 
         let mut stack = Vec::new();
 
@@ -91,7 +90,7 @@ impl GitGraph {
         }
 
         while let Some(hash) = stack.pop() {
-            if !visited.insert(hash.clone()){
+            if !visited.insert(hash.clone()) {
                 continue;
             };
 
@@ -99,11 +98,17 @@ impl GitGraph {
                 Some(node) => node,
                 None => continue,
             };
-            ordered.push(LayoutSeed{
+            ordered.push(GraphNodeView {
                 hash: hash.clone(),
                 row: count,
+                message: repo
+                    .commits
+                    .get(&hash)
+                    .expect("not find commit")
+                    .message
+                    .clone(),
                 parents: node.parents.to_vec(),
-                refs: refs_map.get(&hash).cloned().unwrap_or_default()
+                refs: refs_map.get(&hash).cloned().unwrap_or_default(),
             });
             count += 1;
             for parent in node.parents.iter().rev() {
@@ -111,25 +116,22 @@ impl GitGraph {
             }
         }
         ordered
-
     }
 
-    pub fn bfs_for_layout(&self, repo: &GitRepository) -> Vec<LayoutSeed> {
-        let mut ordered = Vec::<LayoutSeed>::new();
-
+    pub fn bfs_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
+        let mut ordered = Vec::<GraphNodeView>::new();
 
         ordered
     }
 }
 
 fn start_hashes(graph: &GitGraph, repo: &GitRepository) -> Vec<Hash> {
-    let mut starts: Vec<Hash> = repo.refs_by_hash()
-        .into_keys()
-        .collect();
+    let mut starts: Vec<Hash> = repo.refs_by_hash().into_keys().collect();
 
     // Вдруг нет refs, то по графу берем узлы без детей
     if starts.is_empty() {
-        starts = graph.nodes
+        starts = graph
+            .nodes
             .values()
             .filter(|node| node.children().is_empty())
             .map(|node| node.id().clone())
@@ -141,11 +143,11 @@ fn start_hashes(graph: &GitGraph, repo: &GitRepository) -> Vec<Hash> {
     starts
 }
 
-
 #[derive(Debug, Clone)]
-pub struct LayoutSeed {
+pub struct GraphNodeView {
     pub hash: Hash,
     pub row: usize,
     pub parents: Vec<Hash>,
+    pub message: String,
     pub refs: Vec<RefName>,
 }

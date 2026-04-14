@@ -29,7 +29,7 @@ fn main() -> iced::Result {
 
 struct App {
     screen: Screen,
-    git_state: GitState
+    git_state: GitState,
 }
 
 impl App {
@@ -41,12 +41,13 @@ impl App {
         }
 
         let graph = GitGraph::new(&provider.repository.commits);
+        let ordered_nodes = graph.dfs_for_layout(&provider.repository);
         Self {
             screen: Screen::Main,
-            git_state: GitState{
+            git_state: GitState {
                 graph,
-                repo:provider.repository.clone()
-            }
+                repo: provider.repository.clone(),
+            },
         }
     }
 

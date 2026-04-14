@@ -13,7 +13,7 @@ use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::GitRepository;
 use flate2::read::ZlibDecoder;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct GitStorage {
     main_path: PathBuf,
     verbose: bool,

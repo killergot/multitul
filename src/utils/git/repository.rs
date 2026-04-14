@@ -2,8 +2,8 @@ use crate::utils::git::commit::Commit;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
-use std::collections::HashMap;
 use crate::utils::git::ref_target::RefTarget;
+use std::collections::HashMap;
 
 #[derive(Debug, Default, Clone)]
 pub struct GitRepository {
@@ -20,10 +20,10 @@ impl GitRepository {
     pub fn resolve_ref(&self, git_ref: GitRef) -> Option<Hash> {
         match git_ref.target {
             RefTarget::Direct(hash) => Some(hash),
-            RefTarget::Symbolic(name) => {
-                self.refs.get(&name)
-                    .and_then(|next| self.resolve_ref(next.clone()))
-            }
+            RefTarget::Symbolic(name) => self
+                .refs
+                .get(&name)
+                .and_then(|next| self.resolve_ref(next.clone())),
         }
     }
 
@@ -43,8 +43,5 @@ impl GitRepository {
         }
 
         result
-
     }
-
-
 }

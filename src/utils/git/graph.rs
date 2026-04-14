@@ -21,10 +21,24 @@ impl Node {
     }
 }
 
+
+impl Node {
+    pub fn id(&self) -> &Hash {
+        &self.id
+    }
+
+    pub fn parents(&self) -> &Vec<Hash> {
+        &self.parents
+    }
+    pub fn children(&self) -> &Vec<Hash> {
+        &self.children
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct GitGraph {
     pub nodes: HashMap<Hash, Node>,
-    pub init_node: Hash,
+    pub root_nodes: Vec<Hash>,
 }
 
 impl GitGraph {
@@ -48,15 +62,19 @@ impl GitGraph {
 
         // Search initional commit for buils started graph
         // Here can use FIRST and SINGLE node, because we have a DAG graph
-        let init_node = checked_nodes
+        let init_node: Vec<Hash> = checked_nodes
             .iter()
-            .find(|(k, v)| v.parents.is_empty())
+            .filter(|(k, v)| v.parents.is_empty())
             .map(|(k, _)| k.clone())
-            .expect("Не найден первый коммит");
+            .collect();
 
         GitGraph {
             nodes: checked_nodes,
-            init_node: init_node,
+            root_nodes: init_node,
         }
+    }
+
+    pub fn get_dag(&self)  {
+
     }
 }

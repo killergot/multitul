@@ -4,11 +4,12 @@ use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
-use crate::utils::git::repository::Repository;
+use crate::utils::git::repository::GitRepository;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone)]
 pub struct GitProvider {
-    pub repository: Repository,
+    pub repository: GitRepository,
     storage: GitStorage,
     verbose: bool,
 }
@@ -16,7 +17,7 @@ pub struct GitProvider {
 impl GitProvider {
     pub fn new() -> Self {
         GitProvider {
-            repository: Repository::new(),
+            repository: GitRepository::new(),
             storage: GitStorage::new(".git"),
             verbose: false,
         }

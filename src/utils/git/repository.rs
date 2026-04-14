@@ -4,15 +4,15 @@ use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use std::collections::HashMap;
 
-#[derive(Debug, Default)]
-pub struct Repository {
+#[derive(Debug, Default, Clone)]
+pub struct GitRepository {
     pub commits: HashMap<Hash, Commit>,
     pub refs: HashMap<RefName, GitRef>,
     pub head: Option<GitRef>,
 }
 
-impl Repository {
+impl GitRepository {
     pub fn new() -> Self {
-        Repository::default()
+        GitRepository::default()
     }
 }

@@ -14,8 +14,11 @@ use iced::{
 };
 use iced::{Event, Subscription, event, keyboard};
 
-use crate::core::git::dag::git_widget;
+use crate::core::git::widget::git_widget;
 use crate::core::sign::sign_widget;
+use crate::utils::git::GitGraph;
+use crate::utils::git::provider::GitProvider;
+use crate::utils::git::state::GitState;
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -26,12 +29,24 @@ fn main() -> iced::Result {
 
 struct App {
     screen: Screen,
+    git_state: GitState
 }
 
 impl App {
     fn new() -> Self {
+        let mut provider = GitProvider::new();
+        match provider.scan_repository() {
+            Err(e) => panic!("{}", e),
+            _ => {}
+        }
+
+        let graph = GitGraph::new(&provider.repository.commits);
         Self {
             screen: Screen::Main,
+            git_state: GitState{
+                graph,
+                provider:provider.repository.clone()
+            }
         }
     }
 
@@ -83,8 +98,8 @@ impl App {
         }
     }
 
-    fn view(app: &Self) -> Element<'_, Message> {
-        let content = match &app.screen {
+    fn view(&self) -> Element<'_, Message> {
+        let content = match &self.screen {
             Screen::Counter(counter) => column![
                 text(format!("Значение: {}", counter.value)),
                 button("Увеличить").on_press(Message::Counter(CounterMessage::Increment)),
@@ -116,7 +131,7 @@ impl App {
                 .align_x(iced::alignment::Horizontal::Right)
                 .align_y(iced::alignment::Vertical::Bottom)
                 .padding(20),
-            container(git_widget())
+            container(git_widget(&self.git_state.graph))
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .align_x(iced::alignment::Horizontal::Left)

@@ -1,7 +1,7 @@
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
-use crate::utils::git::repository::Repository;
+use crate::utils::git::repository::GitRepository;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]

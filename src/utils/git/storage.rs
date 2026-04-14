@@ -10,9 +10,10 @@ use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
-use crate::utils::git::repository::Repository;
+use crate::utils::git::repository::GitRepository;
 use flate2::read::ZlibDecoder;
 
+#[derive(Debug,Clone)]
 pub struct GitStorage {
     main_path: PathBuf,
     verbose: bool,

@@ -2,7 +2,7 @@ pub mod commit;
 mod git_error;
 mod git_ref;
 mod graph;
-mod graph_layout;
+pub mod graph_layout;
 mod hash;
 pub mod provider;
 mod ref_name;

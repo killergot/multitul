@@ -5,6 +5,7 @@ use iced::widget::text::base;
 use std::cmp::PartialEq;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct GraphLayout {
     pub nodes: Vec<LayoutNode>,
     pub edges: Vec<LayoutEdge>,
@@ -40,14 +41,14 @@ impl GraphLayout {
                 Some(lane) => {
                     active_lanes[lane] = None;
                 }
-                None => match first_free_lane {
+                None => match first_free_lane.take() {
                     Some(lane) => {
                         base_lane = Some(lane);
-                        first_free_lane = None;
                     }
                     None => {
                         active_lanes.push(None);
                         base_lane = Some(active_lanes.len() - 1);
+                        lane_count += 1;
                     }
                 },
             }
@@ -69,10 +70,13 @@ impl GraphLayout {
                     to_lane: base_lane.unwrap(),
                 })
             }
+            else {
+                active_lanes[base_lane.unwrap()] = None;
+            }
 
             let mut new_base_lane = None;
             for parent in node.parents.iter().skip(1) {
-                if let Some(lane) = first_free_lane {
+                if let Some(lane) = first_free_lane.take() {
                     new_base_lane = Some(lane);
                     active_lanes[lane] = Some(parent.clone());
                 } else {
@@ -82,13 +86,14 @@ impl GraphLayout {
                     } else {
                         new_base_lane = Some(active_lanes.len());
                         active_lanes.push(Some(parent.clone()));
+                        lane_count += 1;
                     }
                 }
                 edges.push(LayoutEdge {
                     from: parent.clone(),
                     to: node.hash.clone(),
                     from_lane: new_base_lane.unwrap(),
-                    to_lane: new_base_lane.unwrap(),
+                    to_lane: base_lane.unwrap(),
                 })
             }
         }
@@ -101,6 +106,7 @@ impl GraphLayout {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct LayoutNode {
     pub hash: Hash,
     pub row: usize,
@@ -109,6 +115,7 @@ pub struct LayoutNode {
     pub refs: Vec<RefName>,
 }
 
+#[derive(Debug, Clone)]
 pub struct LayoutEdge {
     pub from: Hash,
     pub to: Hash,

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use log::info;
 use std::fs;
 use std::io::Read;
@@ -16,11 +17,18 @@ use flate2::read::ZlibDecoder;
 pub struct GitStorage {
     main_path: PathBuf,
     verbose: bool,
-    pack_files: Vec<PackFile>,
+    pack_files: Vec<PackFiles>,
+}
+
+struct PackFiles {
+    hash: String,
+    idx: PackFileType,
+    pack: PackFileType,
+    rev: Option<PackFileType>,
 }
 
 #[derive(Debug,Clone)]
-pub enum PackFile {
+pub enum PackFileType {
     Idx(Vec<u8>),
     Pack(Vec<u8>),
     Rev(Vec<u8>),
@@ -107,22 +115,54 @@ impl GitStorage {
 
     pub fn _parse_pack_files(&mut self) -> Result<String, GitError> {
        if let Ok(entries) = fs::read_dir(&self.main_path.join("objects/pack/")) {
+           let mut pack_map: HashMap<String,Vec::<PackFileType>> = HashMap::new();
            for entry in entries {
                let entry = entry?.path();
-                self._read_pack_file(&entry)?
+               let id =  entry
+                   .file_stem()
+                   .and_then(|s| s.to_str())
+                   .unwrap()
+                   .to_string();
+               if let Some(pack_file) = self._read_pack_file(&entry) {
+                   pack_map
+                       .entry(id)
+                       .or_insert(Vec::<PackFileType>::new())
+                       .push(pack_file);
+               }
+           }
+           for (hash,files) in pack_map {
+               println!("{}", hash);
+               let mut idx: PackFileType = PackFileType::Crash;
+               let mut pack: PackFileType = PackFileType::Crash;
+               let mut rev: Option<PackFileType> = None;
+               for file in files {
+                   match file {
+                       PackFileType::Pack(bytes) => pack = PackFileType::Pack(bytes),
+                       PackFileType::Rev(bytes) => rev = Some(PackFileType::Rev(bytes)),
+                       PackFileType::Idx(bytes) => idx = PackFileType::Idx(bytes),
+                       _ => {}
+                   }
+               }
+               self.pack_files.push(PackFiles{
+                   hash,
+                   idx: idx.clone(),
+                   pack: pack.clone(),
+                   rev: rev.clone(),
+               })
            }
        };
-        Err(GitError::InvalidObject("Pack not found".to_string()))
+        Ok("Ok".to_string())
     }
 
-    pub fn _read_pack_file(&mut self, subpath: &Path) -> Result<(), GitError> {
-        let entry = fs::read(subpath)?;
-        match entry.as_slice(){
-            [0xFF,0x74,0x4F,0x63,..] => self.pack_files.push(PackFile::Idx(entry)),
-            [0x52,0x44,0x49,0x58, ..] => self.pack_files.push(PackFile::Rev(entry)),
-            [0x50,0x41, 0x43, 0x4B, ..] => self.pack_files.push(PackFile::Pack(entry)),
-            _ => self.pack_files.push(PackFile::Crash),
+    pub fn _read_pack_file(&mut self, subpath: &Path) -> Option<PackFileType> {
+        if let Ok(entry) = fs::read(subpath){
+            match entry.as_slice(){
+                [0xFF,0x74,0x4F,0x63,..] => Some(PackFileType::Idx(entry)),
+                [0x52,0x49,0x44,0x58, ..] => Some(PackFileType::Rev(entry)),
+                [0x50,0x41, 0x43, 0x4B, ..] => Some(PackFileType::Pack(entry)),
+                _ => Some(PackFileType::Crash),
+            }
         }
-        Ok(())
+        else{None}
     }
 }

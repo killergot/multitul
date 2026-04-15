@@ -42,7 +42,7 @@ impl App {
         }
 
         let graph = GitGraph::new(&provider.repository.commits);
-        let ordered_nodes = graph.dfs_for_layout(&provider.repository);
+        let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
         
         Self {

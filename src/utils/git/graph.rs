@@ -75,6 +75,81 @@ impl GitGraph {
         }
     }
 
+    pub fn topo_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
+        let refs_map = repo.refs_by_hash();
+        let start_hashes = start_hashes(self, repo);
+
+        let mut visited = HashSet::<Hash>::new();
+        let mut ordered_hashes = Vec::<Hash>::new();
+
+        enum Frame {
+            Enter(Hash),
+            Exit(Hash),
+        }
+
+        let mut stack = Vec::<Frame>::new();
+
+        for hash in start_hashes.iter().rev() {
+            stack.push(Frame::Enter(hash.clone()));
+        }
+
+        while let Some(frame) = stack.pop() {
+            match frame {
+                Frame::Enter(hash) => {
+                    if visited.contains(&hash) {
+                        continue;
+                    }
+
+                    let node = match self.nodes.get(&hash) {
+                        Some(node) => node,
+                        None => continue,
+                    };
+
+                    visited.insert(hash.clone());
+
+                    // Сначала кладём "выход" из вершины
+                    stack.push(Frame::Exit(hash.clone()));
+
+                    // Потом её соседей
+                    for parent in node.parents.iter().rev() {
+                        if !visited.contains(parent) {
+                            stack.push(Frame::Enter(parent.clone()));
+                        }
+                    }
+                }
+
+                Frame::Exit(hash) => {
+                    ordered_hashes.push(hash);
+                }
+            }
+        }
+
+        // Для topo через DFS обычно нужен reverse
+        ordered_hashes.reverse();
+
+        ordered_hashes
+            .into_iter()
+            .enumerate()
+            .map(|(row, hash)| {
+                let node = self.nodes.get(&hash).expect("node not found");
+
+                GraphNodeView {
+                    hash: hash.clone(),
+                    row,
+                    message: repo
+                        .commits
+                        .get(&hash)
+                        .expect("not find commit")
+                        .message
+                        .clone(),
+                    parents: node.parents.to_vec(),
+                    refs: refs_map.get(&hash).cloned().unwrap_or_default(),
+                }
+            })
+            .collect()
+    }
+
+
     pub fn dfs_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
         let refs_map = repo.refs_by_hash();
         let start_hashes = start_hashes(&self, repo);

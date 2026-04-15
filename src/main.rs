@@ -16,8 +16,16 @@ use iced::{Event, Subscription, event, keyboard};
 
 use crate::core::git::dag::git_widget;
 use crate::core::sign::sign_widget;
+use crate::utils::git::GitStorage;
+use crate::utils::git::provider::GitProvider;
 
 fn main() -> iced::Result {
+    let mut storage = GitStorage::new(".git");
+    match storage._parse_pack_files(){
+        Ok(path) => {},
+        Err(error) => {}
+    };
+
     iced::application(App::new, App::update, App::view)
         .theme(theme)
         .subscription(App::subscription)

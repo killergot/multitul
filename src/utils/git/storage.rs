@@ -16,13 +16,24 @@ use flate2::read::ZlibDecoder;
 pub struct GitStorage {
     main_path: PathBuf,
     verbose: bool,
+    pack_files: Vec<PackFile>,
 }
+
+#[derive(Debug,Clone)]
+pub enum PackFile {
+    Idx(Vec<u8>),
+    Pack(Vec<u8>),
+    Rev(Vec<u8>),
+    Crash
+}
+
 
 impl GitStorage {
     pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
         GitStorage {
             main_path: main_path.as_ref().to_path_buf(),
             verbose: false,
+            pack_files: Vec::new(),
         }
     }
 
@@ -92,5 +103,26 @@ impl GitStorage {
             }
             branches.push(subpath.to_path_buf());
         }
+    }
+
+    pub fn _parse_pack_files(&mut self) -> Result<String, GitError> {
+       if let Ok(entries) = fs::read_dir(&self.main_path.join("objects/pack/")) {
+           for entry in entries {
+               let entry = entry?.path();
+                self._read_pack_file(&entry)?
+           }
+       };
+        Err(GitError::InvalidObject("Pack not found".to_string()))
+    }
+
+    pub fn _read_pack_file(&mut self, subpath: &Path) -> Result<(), GitError> {
+        let entry = fs::read(subpath)?;
+        match entry.as_slice(){
+            [0xFF,0x74,0x4F,0x63,..] => self.pack_files.push(PackFile::Idx(entry)),
+            [0x52,0x44,0x49,0x58, ..] => self.pack_files.push(PackFile::Rev(entry)),
+            [0x50,0x41, 0x43, 0x4B, ..] => self.pack_files.push(PackFile::Pack(entry)),
+            _ => self.pack_files.push(PackFile::Crash),
+        }
+        Ok(())
     }
 }

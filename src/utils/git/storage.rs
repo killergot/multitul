@@ -13,7 +13,7 @@ use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::Repository;
 use flate2::read::ZlibDecoder;
-use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, HASH_LEN_SHA1};
+use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1};
 
 pub struct GitStorage {
     main_path: PathBuf,
@@ -27,6 +27,13 @@ struct PackFiles {
     pack: PackFileType,
     rev: Option<PackFileType>,
 }
+
+impl PackFiles {
+    pub fn get_fanout_as_bytes(&self) -> Option<&[u8]>{
+        self.idx.get_fanout_as_bytes()
+    }
+}
+
 
 #[derive(Debug,Clone)]
 pub enum PackFileType {
@@ -43,6 +50,17 @@ impl PackFileType {
             | PackFileType::Pack(v)
             | PackFileType::Rev(v) => Some(v),
             PackFileType::Crash => None,
+        }
+    }
+
+    fn get_fanout_as_bytes(&self) -> Option<&[u8]> {
+        match self {
+            PackFileType::Idx(v) =>
+                {
+                    let idx = &v[FAN_OUT_OFFSET_V2..];
+                    Some(&idx[..FAN_OUT_SIZE])
+                },
+            _ => None
         }
     }
 }
@@ -128,8 +146,11 @@ impl GitStorage {
 
     pub fn _find_commit(&self, hash: Hash){
         for i in self.pack_files.iter() {
-            let idx = &i.idx.as_slice().unwrap()[FAN_OUT_OFFSET_V2..];
-            
+            if let Some(fanout_bytes) = i.get_fanout_as_bytes() {
+                let fanout = parse_fanout(fanout_bytes);
+                let count_obj = fanout[255];
+                println!("Found fanout: {}", count_obj);
+            }
         }
     }
 
@@ -186,4 +207,11 @@ impl GitStorage {
         }
         else{None}
     }
+}
+
+
+fn parse_fanout(data: &[u8]) -> Vec<u32> {
+    data.chunks_exact(4)
+        .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
+        .collect()
 }

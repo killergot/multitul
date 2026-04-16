@@ -13,7 +13,7 @@ use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::Repository;
 use flate2::read::ZlibDecoder;
-use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1};
+use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASHES_OFFSET_V2, HASH_LEN_SHA1};
 
 pub struct GitStorage {
     main_path: PathBuf,
@@ -63,6 +63,25 @@ impl PackFileType {
             _ => None
         }
     }
+
+    fn get_part_of_hashes_table(&self,start: usize, end: usize) -> Option<Vec<String>> {
+        match self {
+            PackFileType::Idx(v) =>
+                {
+                    let idx = &v[HASHES_OFFSET_V2 + start * HASH_LEN_SHA1..HASHES_OFFSET_V2 + end * HASH_LEN_SHA1];
+                    let hashes: Vec<String> = idx
+                        .chunks(20)
+                        .map(|chunk| {
+                            chunk.iter()
+                                .map(|b| format!("{:02x}", b))
+                                .collect()
+                        })
+                        .collect();
+                    Some(hashes)
+                },
+            _ => None
+        }
+    }
 }
 
 
@@ -82,7 +101,7 @@ impl GitStorage {
     }
 
     pub fn read_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
-        if hash.len() < HASH_LEN_SHA1 {
+        if hash.len() < HASH_LEN_SHA1 * 2 {
             return Err(GitError::InvalidObject("Hash is too short".to_string()));
         }
 
@@ -150,7 +169,7 @@ impl GitStorage {
                 let fanout = parse_fanout(fanout_bytes);
                 let count_obj = fanout[255];
                 println!("Found fanout: {}", count_obj);
-                let oid = parse_hash(&hash);
+                let oid: Vec<u8> = hex_to_bytes(&hash.0);
                 let first = oid[0];
                 let lo = match first {
                     0 => 0,
@@ -158,11 +177,15 @@ impl GitStorage {
                 };
                 let hi = fanout[first as usize];
                 let count = hi - lo;
+                println!("Hi - Lo: {}", count);
                 if count == 0 {
                     continue;
                 }
-                else{
-                    println!("lo - hi = : {}", count);
+                if let Some(hashes) = i.idx.get_part_of_hashes_table(lo as usize, hi as usize){
+                    println!("Found hashes: {:?}", hashes);
+                    if let Some(our_index) = binary_search(&hashes, &hash.0) {
+                        println!("Found {} hashes for {}:", count, hashes[our_index]);
+                    }
                 }
             }
         }
@@ -230,6 +253,40 @@ fn parse_fanout(data: &[u8]) -> Vec<u32> {
         .collect()
 }
 
-fn parse_hash(hash: &Hash) -> Vec<u8> {
-    hash.0.bytes().collect()
+fn binary_search<T: Ord>(slice: &[T], target: &T) -> Option<usize> {
+    let mut left = 0;
+    let mut right = slice.len();
+
+    while left < right {
+        let mid = left + (right - left) / 2;
+
+        if &slice[mid] < target {
+            left = mid + 1;
+        } else if &slice[mid] > target {
+            right = mid;
+        } else {
+            return Some(mid);
+        }
+    }
+
+    None
+}
+
+fn hex_to_bytes(s: &str) -> Vec<u8> {
+    // Сначала я юзал .bytes, что оказалось в корне не верно, оно возвращает ASCII коды, а не байты
+    // Потом я юзал from_str_radix, но его я не смог нормально сам написать, так что вспомнил 1 курс
+    fn val(c: u8) -> u8 {
+        match c {
+            b'0'..=b'9' => c - b'0',
+            b'a'..=b'f' => c - b'a' + 10,
+            b'A'..=b'F' => c - b'A' + 10,
+            _ => 0,
+        }
+    }
+
+    let bytes = s.as_bytes();
+
+    bytes.chunks(2)
+        .map(|pair| (val(pair[0]) << 4) | val(pair[1]))
+        .collect()
 }

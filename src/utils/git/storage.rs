@@ -150,6 +150,20 @@ impl GitStorage {
                 let fanout = parse_fanout(fanout_bytes);
                 let count_obj = fanout[255];
                 println!("Found fanout: {}", count_obj);
+                let oid = parse_hash(&hash);
+                let first = oid[0];
+                let lo = match first {
+                    0 => 0,
+                    _ => fanout[(first - 1) as usize],
+                };
+                let hi = fanout[first as usize];
+                let count = hi - lo;
+                if count == 0 {
+                    continue;
+                }
+                else{
+                    println!("lo - hi = : {}", count);
+                }
             }
         }
     }
@@ -214,4 +228,8 @@ fn parse_fanout(data: &[u8]) -> Vec<u32> {
     data.chunks_exact(4)
         .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
         .collect()
+}
+
+fn parse_hash(hash: &Hash) -> Vec<u8> {
+    hash.0.bytes().collect()
 }

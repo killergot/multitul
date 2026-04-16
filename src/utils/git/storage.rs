@@ -13,6 +13,7 @@ use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::Repository;
 use flate2::read::ZlibDecoder;
+use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, HASH_LEN_SHA1};
 
 pub struct GitStorage {
     main_path: PathBuf,
@@ -35,6 +36,18 @@ pub enum PackFileType {
     Crash
 }
 
+impl PackFileType {
+    fn as_slice(&self) -> Option<&[u8]> {
+        match self {
+            PackFileType::Idx(v)
+            | PackFileType::Pack(v)
+            | PackFileType::Rev(v) => Some(v),
+            PackFileType::Crash => None,
+        }
+    }
+}
+
+
 
 impl GitStorage {
     pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
@@ -51,7 +64,7 @@ impl GitStorage {
     }
 
     pub fn read_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
-        if hash.len() < 2 {
+        if hash.len() < HASH_LEN_SHA1 {
             return Err(GitError::InvalidObject("Hash is too short".to_string()));
         }
 
@@ -112,6 +125,14 @@ impl GitStorage {
             branches.push(subpath.to_path_buf());
         }
     }
+
+    pub fn _find_commit(&self, hash: Hash){
+        for i in self.pack_files.iter() {
+            let idx = &i.idx.as_slice().unwrap()[FAN_OUT_OFFSET_V2..];
+            
+        }
+    }
+
 
     pub fn _parse_pack_files(&mut self) -> Result<String, GitError> {
        if let Ok(entries) = fs::read_dir(&self.main_path.join("objects/pack/")) {

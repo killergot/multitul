@@ -8,6 +8,7 @@ mod ref_name;
 mod ref_target;
 mod repository;
 pub mod storage;
+mod consts;
 
 pub use self::graph::GitGraph;
 pub use self::storage::GitStorage;

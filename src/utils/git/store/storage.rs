@@ -38,22 +38,31 @@ impl GitStorage {
         Ok(content)
     }
 
-    pub fn read_commit_by_hash(&self, hash: &str) -> Result<String, GitError> {
+    pub fn read_commit_by_hash(&mut self, hash: &str) -> Result<String, GitError> {
         if hash.len() < HASH_LEN_SHA1 * 2 {
             return Err(GitError::InvalidObject("Hash is too short".to_string()));
         }
 
         let dir_commit = self.main_path.join("objects").join(&hash[0..2]);
-
-        let compressed = fs::read(&dir_commit.join(&hash[2..]))?;
-
-        let mut decoder = ZlibDecoder::new(&compressed[..]);
-        let mut decoded = String::new();
-        decoder.read_to_string(&mut decoded)?;
-        Ok(decoded)
+        match fs::read(&dir_commit.join(&hash[2..])){
+            Ok(compressed) => {
+                let mut decoder = ZlibDecoder::new(&compressed[..]);
+                let mut decoded = String::new();
+                decoder.read_to_string(&mut decoded)?;
+                Ok(decoded)
+            }
+            _ => {
+                self._parse_pack_files();
+                let res = self._find_commit(hash.to_string())?;
+                match String::from_utf8(res){
+                    Ok(res) => Ok(res),
+                    Err(_) => Err(GitError::InvalidObject("Hash is invalid".to_string()))
+                }
+            }
+        }
     }
 
-    pub fn read_commit_by_ref(&self, refs: &Path) -> Result<(String, String), GitError> {
+    pub fn read_commit_by_ref(&mut self, refs: &Path) -> Result<(String, String), GitError> {
         let commit_uid = fs::read_to_string(&refs)?;
         let commit_uid = commit_uid.trim();
 
@@ -101,7 +110,7 @@ impl GitStorage {
         }
     }
 
-    pub fn get_commit_from_pack_file(pack: PackFileType, offset: usize) {
+    pub fn get_commit_from_pack_file(pack: PackFileType, offset: usize) -> Result<Vec<u8>, GitError> {
         if let Some(objects) = pack.get_objects_table() {
             if let Some(pack_entry) = objects.get(offset) {
                 if let Some(pack_type) = parse_type_object(pack_entry){
@@ -121,20 +130,26 @@ impl GitStorage {
                         offset_size += 7;
                     }
                 }
-                println!("size: {}", size);
-                println!("Pack entry: {:?}", pack_entry);
+                println!("Size this object: {}", size);
+                let mut decoder = ZlibDecoder::new(&objects[offset + offset_extra + 1..]);
+                let mut decoded = Vec::new();
+                if let Ok(res_size) = decoder.read_to_end(&mut decoded){
+                    println!("decoded size:{}",res_size);
+                }
+                return(Ok(decoded))
             }
         }
+        Err(GitError::InvalidObject("WHAAAH".to_string()))
     }
 
-    pub fn _find_commit(&self, hash: Hash) {
+    pub fn _find_commit(&self, hash: String) -> Result<Vec<u8>, GitError> {
         for i in self.pack_files.iter() {
             println!();
             if let Some(fanout_bytes) = i.get_fanout_as_bytes() {
                 let fanout = parse_fanout(fanout_bytes);
                 let count_obj = fanout[255];
                 println!("Found fanout: {}", count_obj);
-                let oid: Vec<u8> = hex_to_bytes(&hash.0);
+                let oid: Vec<u8> = hex_to_bytes(&hash);
                 let first = oid[0];
                 let lo = match first {
                     0 => 0,
@@ -148,17 +163,18 @@ impl GitStorage {
                 }
                 if let Some(hashes) = i.idx.get_part_of_hashes_table(lo as usize, hi as usize) {
                     println!("Found hashes: {:?}", hashes);
-                    if let Some(our_index) = binary_search(&hashes, &hash.0) {
+                    if let Some(our_index) = binary_search(&hashes, &hash) {
                         println!("In idx: {} found hash {}", &i.hash[..10], &hashes[our_index][..7]);
                         if let Some(offsets) = i.idx.get_offsets_table(count_obj as usize) {
                             println!("Found offset: {}", offsets[lo as usize + our_index]);
                             // тут нужна логика на старший бит: если он есть, то это индекс в large offsets таблице
-                            Self::get_commit_from_pack_file(i.pack.clone(), offsets[lo as usize + our_index] as usize);
+                            return Self::get_commit_from_pack_file(i.pack.clone(), offsets[lo as usize + our_index] as usize);
                         };
                     }
                 }
             }
         }
+        Err(GitError::InvalidObject("WHAAAH".to_string()))
     }
 
     pub fn _parse_pack_files(&mut self) -> Result<String, GitError> {

@@ -107,6 +107,21 @@ impl GitStorage {
                 if let Some(pack_type) = parse_type_object(pack_entry){
                     println!("pack type:{:?}",pack_type)
                 }
+                let mut size = (*pack_entry & 0x0f) as u32;
+                let mut offset_size = 4;
+                let mut offset_extra : usize = 0;
+                let mut next_byte_is_size = *pack_entry &0x80;
+                while next_byte_is_size != 0 {
+                    //Какая то проблема с offset для nextsize
+                    offset_extra += 1;
+                    if let Some(next_size) = objects.get(offset + offset_extra) {
+                        println!("next size ={}",next_size);
+                        next_byte_is_size = *next_size &0x80;
+                        size += (*next_size as u32 & 0x7f) << offset_size;
+                        offset_size += 7;
+                    }
+                }
+                println!("size: {}", size);
                 println!("Pack entry: {:?}", pack_entry);
             }
         }

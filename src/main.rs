@@ -17,6 +17,7 @@ use iced::{Event, Subscription, event, keyboard};
 use crate::core::git::widget::git_widget;
 use crate::core::sign::sign_widget;
 use crate::utils::git::GitGraph;
+use crate::utils::git::GitStorage;
 use crate::utils::git::graph_layout::GraphLayout;
 use crate::utils::git::provider::GitProvider;
 use crate::utils::git::state::GitState;
@@ -44,7 +45,7 @@ impl App {
         let graph = GitGraph::new(&provider.repository.commits);
         let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
-        
+
         Self {
             screen: Screen::Main,
             git_state: GitState {

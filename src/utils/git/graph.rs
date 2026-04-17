@@ -149,7 +149,6 @@ impl GitGraph {
             .collect()
     }
 
-
     pub fn dfs_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
         let refs_map = repo.refs_by_hash();
         let start_hashes = start_hashes(&self, repo);

@@ -69,8 +69,7 @@ impl GraphLayout {
                     from_lane: base_lane.unwrap(),
                     to_lane: base_lane.unwrap(),
                 })
-            }
-            else {
+            } else {
                 active_lanes[base_lane.unwrap()] = None;
             }
 

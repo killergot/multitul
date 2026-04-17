@@ -1,5 +1,4 @@
 pub mod commit;
-mod consts;
 mod git_error;
 mod git_ref;
 mod graph;

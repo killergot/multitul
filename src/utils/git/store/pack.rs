@@ -1,5 +1,5 @@
 use iced::futures::StreamExt;
-use crate::utils::git::consts::{CRC_LEN, FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASHES_OFFSET_V2, HASH_LEN_SHA1, OFFSET_LEN};
+use crate::utils::git::store::consts::{CRC_LEN, FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASHES_OFFSET_V2, HASH_LEN_SHA1, OFFSET_LEN, PACK_CHECKSUM_LEN, PACK_OBJECTS_OFFSET};
 
 pub struct PackFiles {
     pub hash: String,
@@ -13,6 +13,17 @@ impl PackFiles {
         self.idx.get_fanout_as_bytes()
     }
 }
+
+#[derive(Debug, Clone)]
+pub enum ObjectPackType{
+    Commit,
+    Tree,
+    Blob,
+    Tag,
+    Ofs_delta,
+    Ref_delta,
+}
+
 
 #[derive(Debug, Clone)]
 pub enum PackFileType {
@@ -71,4 +82,16 @@ impl PackFileType {
             _ => None,
         }
     }
+
+    pub fn get_objects_table(&self) -> Option<&[u8]> {
+        match self {
+            PackFileType::Pack(v) => {
+                let objects = &v[..];
+                Some(&objects[..objects.len() - PACK_CHECKSUM_LEN])
+            }
+            _ => None,
+        }
+    }
+
+
 }

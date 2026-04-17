@@ -6,14 +6,14 @@ use std::path::{Path, PathBuf};
 
 use crate::utils::git::commit::Commit;
 
-use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1, HASHES_OFFSET_V2};
+use crate::utils::git::store::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1, HASHES_OFFSET_V2};
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::Repository;
-use crate::utils::git::store::pack::{PackFileType, PackFiles};
+use crate::utils::git::store::pack::{ObjectPackType, PackFileType, PackFiles};
 
 use flate2::read::ZlibDecoder;
 
@@ -101,6 +101,17 @@ impl GitStorage {
         }
     }
 
+    pub fn get_commit_from_pack_file(pack: PackFileType, offset: usize) {
+        if let Some(objects) = pack.get_objects_table() {
+            if let Some(pack_entry) = objects.get(offset) {
+                if let Some(pack_type) = parse_type_object(pack_entry){
+                    println!("pack type:{:?}",pack_type)
+                }
+                println!("Pack entry: {:?}", pack_entry);
+            }
+        }
+    }
+
     pub fn _find_commit(&self, hash: Hash) {
         for i in self.pack_files.iter() {
             println!();
@@ -126,6 +137,8 @@ impl GitStorage {
                         println!("In idx: {} found hash {}", &i.hash[..10], &hashes[our_index][..7]);
                         if let Some(offsets) = i.idx.get_offsets_table(count_obj as usize) {
                             println!("Found offset: {}", offsets[lo as usize + our_index]);
+                            // тут нужна логика на старший бит: если он есть, то это индекс в large offsets таблице
+                            Self::get_commit_from_pack_file(i.pack.clone(), offsets[lo as usize + our_index] as usize);
                         };
                     }
                 }
@@ -232,4 +245,18 @@ fn hex_to_bytes(s: &str) -> Vec<u8> {
         .chunks(2)
         .map(|pair| (val(pair[0]) << 4) | val(pair[1]))
         .collect()
+}
+
+
+fn parse_type_object(pack_entry: &u8) -> Option<ObjectPackType>{
+    println!("num type = {}", (pack_entry >> 4 ) & 7 as u8);
+    match (pack_entry >> 4) & 7 as u8 {
+        1 => Some(ObjectPackType::Commit),
+        2 => Some(ObjectPackType::Tree),
+        3 => Some(ObjectPackType::Blob),
+        4 => Some(ObjectPackType::Tag),
+        6 => Some(ObjectPackType::Ofs_delta),
+        7 => Some(ObjectPackType::Ref_delta),
+        _ => None
+    }
 }

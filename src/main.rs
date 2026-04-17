@@ -20,13 +20,6 @@ use crate::utils::git::GitStorage;
 use crate::utils::git::provider::GitProvider;
 
 fn main() -> iced::Result {
-    let mut storage = GitStorage::new(".git");
-    match storage._parse_pack_files() {
-        Ok(path) => {}
-        Err(error) => {}
-    };
-    storage._find_commit("40fb454bc0c3ce0f2dba46f5a261a9ca535a7bcb".into());
-
     iced::application(App::new, App::update, App::view)
         .theme(theme)
         .subscription(App::subscription)

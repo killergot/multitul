@@ -103,6 +103,7 @@ impl GitStorage {
 
     pub fn _find_commit(&self, hash: Hash) {
         for i in self.pack_files.iter() {
+            println!();
             if let Some(fanout_bytes) = i.get_fanout_as_bytes() {
                 let fanout = parse_fanout(fanout_bytes);
                 let count_obj = fanout[255];
@@ -122,7 +123,10 @@ impl GitStorage {
                 if let Some(hashes) = i.idx.get_part_of_hashes_table(lo as usize, hi as usize) {
                     println!("Found hashes: {:?}", hashes);
                     if let Some(our_index) = binary_search(&hashes, &hash.0) {
-                        println!("Found {} hashes for {}:", count, hashes[our_index]);
+                        println!("In idx: {} found hash {}", &i.hash[..10], &hashes[our_index][..7]);
+                        if let Some(offsets) = i.idx.get_offsets_table(count_obj as usize) {
+                            println!("Found offset: {}", offsets[lo as usize + our_index]);
+                        };
                     }
                 }
             }
@@ -191,6 +195,7 @@ fn parse_fanout(data: &[u8]) -> Vec<u32> {
 }
 
 fn binary_search<T: Ord>(slice: &[T], target: &T) -> Option<usize> {
+    // грокаем алгоритмы ХЕЛЛОУ
     let mut left = 0;
     let mut right = slice.len();
 

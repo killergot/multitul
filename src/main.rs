@@ -25,7 +25,7 @@ fn main() -> iced::Result {
         Ok(path) => {}
         Err(error) => {}
     };
-    storage._find_commit("a256bc296ebcb3538c1ec0a3f69b87281e90ffcf".into());
+    storage._find_commit("40fb454bc0c3ce0f2dba46f5a261a9ca535a7bcb".into());
 
     iced::application(App::new, App::update, App::view)
         .theme(theme)

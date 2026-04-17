@@ -21,8 +21,8 @@ use crate::utils::git::provider::GitProvider;
 
 fn main() -> iced::Result {
     let mut storage = GitStorage::new(".git");
-    match storage._parse_pack_files(){
-        Ok(path) => {},
+    match storage._parse_pack_files() {
+        Ok(path) => {}
         Err(error) => {}
     };
     storage._find_commit("a256bc296ebcb3538c1ec0a3f69b87281e90ffcf".into());

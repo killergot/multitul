@@ -1,11 +1,12 @@
-use std::collections::HashMap;
 use log::info;
+use std::collections::HashMap;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use super::commit::Commit;
 
+use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1, HASHES_OFFSET_V2};
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::hash::Hash;
@@ -13,7 +14,6 @@ use crate::utils::git::ref_name::RefName;
 use crate::utils::git::ref_target::RefTarget;
 use crate::utils::git::repository::Repository;
 use flate2::read::ZlibDecoder;
-use crate::utils::git::consts::{FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASHES_OFFSET_V2, HASH_LEN_SHA1};
 
 pub struct GitStorage {
     main_path: PathBuf,
@@ -29,62 +29,52 @@ struct PackFiles {
 }
 
 impl PackFiles {
-    pub fn get_fanout_as_bytes(&self) -> Option<&[u8]>{
+    pub fn get_fanout_as_bytes(&self) -> Option<&[u8]> {
         self.idx.get_fanout_as_bytes()
     }
 }
 
-
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum PackFileType {
     Idx(Vec<u8>),
     Pack(Vec<u8>),
     Rev(Vec<u8>),
-    Crash
+    Crash,
 }
 
 impl PackFileType {
     fn as_slice(&self) -> Option<&[u8]> {
         match self {
-            PackFileType::Idx(v)
-            | PackFileType::Pack(v)
-            | PackFileType::Rev(v) => Some(v),
+            PackFileType::Idx(v) | PackFileType::Pack(v) | PackFileType::Rev(v) => Some(v),
             PackFileType::Crash => None,
         }
     }
 
     fn get_fanout_as_bytes(&self) -> Option<&[u8]> {
         match self {
-            PackFileType::Idx(v) =>
-                {
-                    let idx = &v[FAN_OUT_OFFSET_V2..];
-                    Some(&idx[..FAN_OUT_SIZE])
-                },
-            _ => None
+            PackFileType::Idx(v) => {
+                let idx = &v[FAN_OUT_OFFSET_V2..];
+                Some(&idx[..FAN_OUT_SIZE])
+            }
+            _ => None,
         }
     }
 
-    fn get_part_of_hashes_table(&self,start: usize, end: usize) -> Option<Vec<String>> {
+    fn get_part_of_hashes_table(&self, start: usize, end: usize) -> Option<Vec<String>> {
         match self {
-            PackFileType::Idx(v) =>
-                {
-                    let idx = &v[HASHES_OFFSET_V2 + start * HASH_LEN_SHA1..HASHES_OFFSET_V2 + end * HASH_LEN_SHA1];
-                    let hashes: Vec<String> = idx
-                        .chunks(20)
-                        .map(|chunk| {
-                            chunk.iter()
-                                .map(|b| format!("{:02x}", b))
-                                .collect()
-                        })
-                        .collect();
-                    Some(hashes)
-                },
-            _ => None
+            PackFileType::Idx(v) => {
+                let idx = &v[HASHES_OFFSET_V2 + start * HASH_LEN_SHA1
+                    ..HASHES_OFFSET_V2 + end * HASH_LEN_SHA1];
+                let hashes: Vec<String> = idx
+                    .chunks(20)
+                    .map(|chunk| chunk.iter().map(|b| format!("{:02x}", b)).collect())
+                    .collect();
+                Some(hashes)
+            }
+            _ => None,
         }
     }
 }
-
-
 
 impl GitStorage {
     pub fn new<P: AsRef<Path>>(main_path: P) -> Self {
@@ -163,7 +153,7 @@ impl GitStorage {
         }
     }
 
-    pub fn _find_commit(&self, hash: Hash){
+    pub fn _find_commit(&self, hash: Hash) {
         for i in self.pack_files.iter() {
             if let Some(fanout_bytes) = i.get_fanout_as_bytes() {
                 let fanout = parse_fanout(fanout_bytes);
@@ -181,7 +171,7 @@ impl GitStorage {
                 if count == 0 {
                     continue;
                 }
-                if let Some(hashes) = i.idx.get_part_of_hashes_table(lo as usize, hi as usize){
+                if let Some(hashes) = i.idx.get_part_of_hashes_table(lo as usize, hi as usize) {
                     println!("Found hashes: {:?}", hashes);
                     if let Some(our_index) = binary_search(&hashes, &hash.0) {
                         println!("Found {} hashes for {}:", count, hashes[our_index]);
@@ -191,61 +181,60 @@ impl GitStorage {
         }
     }
 
-
     pub fn _parse_pack_files(&mut self) -> Result<String, GitError> {
-       if let Ok(entries) = fs::read_dir(&self.main_path.join("objects/pack/")) {
-           let mut pack_map: HashMap<String,Vec::<PackFileType>> = HashMap::new();
-           for entry in entries {
-               let entry = entry?.path();
-               let id =  entry
-                   .file_stem()
-                   .and_then(|s| s.to_str())
-                   .unwrap()
-                   .to_string();
-               if let Some(pack_file) = self._read_pack_file(&entry) {
-                   pack_map
-                       .entry(id)
-                       .or_insert(Vec::<PackFileType>::new())
-                       .push(pack_file);
-               }
-           }
-           for (hash,files) in pack_map {
-               println!("{}", hash);
-               let mut idx: PackFileType = PackFileType::Crash;
-               let mut pack: PackFileType = PackFileType::Crash;
-               let mut rev: Option<PackFileType> = None;
-               for file in files {
-                   match file {
-                       PackFileType::Pack(bytes) => pack = PackFileType::Pack(bytes),
-                       PackFileType::Rev(bytes) => rev = Some(PackFileType::Rev(bytes)),
-                       PackFileType::Idx(bytes) => idx = PackFileType::Idx(bytes),
-                       _ => {}
-                   }
-               }
-               self.pack_files.push(PackFiles{
-                   hash,
-                   idx: idx.clone(),
-                   pack: pack.clone(),
-                   rev: rev.clone(),
-               })
-           }
-       };
+        if let Ok(entries) = fs::read_dir(&self.main_path.join("objects/pack/")) {
+            let mut pack_map: HashMap<String, Vec<PackFileType>> = HashMap::new();
+            for entry in entries {
+                let entry = entry?.path();
+                let id = entry
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap()
+                    .to_string();
+                if let Some(pack_file) = self._read_pack_file(&entry) {
+                    pack_map
+                        .entry(id)
+                        .or_insert(Vec::<PackFileType>::new())
+                        .push(pack_file);
+                }
+            }
+            for (hash, files) in pack_map {
+                println!("{}", hash);
+                let mut idx: PackFileType = PackFileType::Crash;
+                let mut pack: PackFileType = PackFileType::Crash;
+                let mut rev: Option<PackFileType> = None;
+                for file in files {
+                    match file {
+                        PackFileType::Pack(bytes) => pack = PackFileType::Pack(bytes),
+                        PackFileType::Rev(bytes) => rev = Some(PackFileType::Rev(bytes)),
+                        PackFileType::Idx(bytes) => idx = PackFileType::Idx(bytes),
+                        _ => {}
+                    }
+                }
+                self.pack_files.push(PackFiles {
+                    hash,
+                    idx: idx.clone(),
+                    pack: pack.clone(),
+                    rev: rev.clone(),
+                })
+            }
+        };
         Ok("Ok".to_string())
     }
 
     pub fn _read_pack_file(&mut self, subpath: &Path) -> Option<PackFileType> {
-        if let Ok(entry) = fs::read(subpath){
-            match entry.as_slice(){
-                [0xFF,0x74,0x4F,0x63,..] => Some(PackFileType::Idx(entry)),
-                [0x52,0x49,0x44,0x58, ..] => Some(PackFileType::Rev(entry)),
-                [0x50,0x41, 0x43, 0x4B, ..] => Some(PackFileType::Pack(entry)),
+        if let Ok(entry) = fs::read(subpath) {
+            match entry.as_slice() {
+                [0xFF, 0x74, 0x4F, 0x63, ..] => Some(PackFileType::Idx(entry)),
+                [0x52, 0x49, 0x44, 0x58, ..] => Some(PackFileType::Rev(entry)),
+                [0x50, 0x41, 0x43, 0x4B, ..] => Some(PackFileType::Pack(entry)),
                 _ => Some(PackFileType::Crash),
             }
+        } else {
+            None
         }
-        else{None}
     }
 }
-
 
 fn parse_fanout(data: &[u8]) -> Vec<u32> {
     data.chunks_exact(4)
@@ -286,7 +275,8 @@ fn hex_to_bytes(s: &str) -> Vec<u8> {
 
     let bytes = s.as_bytes();
 
-    bytes.chunks(2)
+    bytes
+        .chunks(2)
         .map(|pair| (val(pair[0]) << 4) | val(pair[1]))
         .collect()
 }

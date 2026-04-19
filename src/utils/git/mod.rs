@@ -3,7 +3,7 @@ mod git_error;
 mod git_ref;
 mod graph;
 pub mod graph_layout;
-mod hash;
+pub mod hash;
 pub mod provider;
 mod ref_name;
 mod ref_target;

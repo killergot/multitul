@@ -7,7 +7,7 @@ use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::keyboard::Key;
 use iced::keyboard::key::Named;
-use iced::widget::{container, stack};
+use iced::widget::{container, scrollable, stack};
 use iced::{
     Element, Length, Theme,
     widget::{button, column, text},
@@ -137,12 +137,16 @@ impl App {
                 .align_x(iced::alignment::Horizontal::Right)
                 .align_y(iced::alignment::Vertical::Bottom)
                 .padding(20),
-            container(git_widget(&self.git_state.layout))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .align_x(iced::alignment::Horizontal::Left)
-                .align_y(iced::alignment::Vertical::Bottom)
-                .padding(20),
+            container(
+            scrollable(git_widget(&self.git_state.layout))
+              .height(220)
+              .width(320)
+              )
+              .width(Length::Fill)
+              .height(Length::Fill)
+              .align_x(iced::alignment::Horizontal::Left)
+              .align_y(iced::alignment::Vertical::Bottom)
+              .padding(20),
         ]
         .into()
     }

@@ -46,6 +46,8 @@ impl App {
         let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
 
+        println!("{:?}",layout);
+
         Self {
             screen: Screen::Main,
             git_state: GitState {

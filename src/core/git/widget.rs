@@ -1,12 +1,11 @@
-use std::collections::HashMap;
 use crate::Message;
-
-use iced::{mouse, Element, Length, Rectangle, Renderer, Theme, Point, Color, Pixels};
-use iced::alignment::Vertical;
-use iced::widget::canvas::{Cache, Geometry, Image, Path, Program, Stroke};
-use iced::widget::{canvas, text, Canvas};
 use crate::utils::git::graph_layout::{GraphLayout, LayoutNode};
 use crate::utils::git::hash::Hash;
+use iced::alignment::Vertical;
+use iced::widget::canvas::{self, Cache, Geometry, LineCap, LineJoin, Path, Program, Stroke};
+use iced::widget::Canvas;
+use iced::{mouse, Color, Element, Length, Pixels, Point, Rectangle, Renderer, Theme};
+use std::collections::HashMap;
 
 pub fn git_widget<'a>(layout: &'a GraphLayout) -> Element<'a, Message> {
     Canvas::new(GitGraphCanvas::new(layout))
@@ -28,7 +27,11 @@ const TOP_PAD: f32 = 12.0;
 const LANE_W: f32 = 18.0;
 const ROW_H: f32 = 26.0;
 const NODE_R: f32 = 4.0;
+const NODE_OUTLINE_R: f32 = 5.5;
 const LABEL_GAP: f32 = 18.0;
+const EDGE_WIDTH: f32 = 2.0;
+const MERGE_APPROACH_FACTOR: f32 = 0.35;
+const NODE_OUTLINE_COLOR: Color = Color::from_rgb8(28, 31, 38);
 
 const EDGE_COLOR : Color = Color::from_rgb8(110, 120, 140);
 const NODE_COLOR : Color = Color::from_rgb8(235, 235, 235);
@@ -55,6 +58,52 @@ impl<'a> GitGraphCanvas<'a> {
         self.point(node.row, node.lane)
     }
 
+    fn edge_path(
+        &self,
+        from: Point,
+        to: Point,
+        source_lane: usize,
+        from_lane: usize,
+        to_lane: usize,
+        target_lane: usize,
+    ) -> Path {
+        let source_track_x = LEFT_PAD + from_lane as f32 * LANE_W;
+        let target_track_x = LEFT_PAD + to_lane as f32 * LANE_W;
+
+        if source_lane == from_lane && from_lane == to_lane && to_lane == target_lane {
+            return Path::line(from, to);
+        }
+
+        let vertical_direction = (to.y - from.y).signum();
+        let exit_y = from.y + vertical_direction * (ROW_H * MERGE_APPROACH_FACTOR);
+        let approach_y = to.y - vertical_direction * (ROW_H * MERGE_APPROACH_FACTOR);
+
+        Path::new(|builder| {
+            builder.move_to(from);
+
+            if (from.y - exit_y).abs() > f32::EPSILON {
+                builder.line_to(Point::new(from.x, exit_y));
+            }
+
+            if (from.x - source_track_x).abs() > f32::EPSILON {
+                builder.line_to(Point::new(source_track_x, exit_y));
+            }
+
+            if (exit_y - approach_y).abs() > f32::EPSILON {
+                builder.line_to(Point::new(source_track_x, approach_y));
+            }
+
+            if (source_track_x - target_track_x).abs() > f32::EPSILON {
+                builder.line_to(Point::new(target_track_x, approach_y));
+            }
+
+            if (to.x - target_track_x).abs() > f32::EPSILON {
+                builder.line_to(Point::new(target_track_x, to.y));
+            }
+
+            builder.line_to(to);
+        })
+    }
 }
 
 impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
@@ -78,22 +127,25 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
                 let Some(from_node) = hash_map_nodes.get(&edge.from) else { continue; };
                 let Some(to_node) = hash_map_nodes.get(&edge.to) else { continue; };
 
-                let from = self.point(from_node.row, edge.from_lane);
-                let to = self.point(to_node.row, edge.to_lane);
+                let from = self.node_point(from_node);
+                let to = self.node_point(to_node);
+                let path = self.edge_path(
+                    from,
+                    to,
+                    from_node.lane,
+                    edge.from_lane,
+                    edge.to_lane,
+                    to_node.lane,
+                );
 
-                let path = if edge.from_lane == edge.to_lane {
-                    Path::line(from, to)
-                } else {
-                    let mid_y = (from.y + to.y) * 0.5;
-                    Path::new(|b| {
-                        b.move_to(from);
-                        b.line_to(Point::new(from.x, mid_y));
-                        b.line_to(Point::new(to.x, mid_y));
-                        b.line_to(to);
-                    })
-                };
-
-                frame.stroke(&path, Stroke::default().with_width(2.0).with_color(EDGE_COLOR));
+                frame.stroke(
+                    &path,
+                    Stroke::default()
+                        .with_width(EDGE_WIDTH)
+                        .with_color(EDGE_COLOR)
+                        .with_line_cap(LineCap::Round)
+                        .with_line_join(LineJoin::Round),
+                );
             }
         });
 
@@ -101,6 +153,7 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
             for node in &self.layout.nodes {
                 let p = self.node_point(node);
 
+                frame.fill(&Path::circle(p, NODE_OUTLINE_R), NODE_OUTLINE_COLOR);
                 frame.fill(&Path::circle(p, NODE_R), NODE_COLOR);
 
                 let refs = if node.refs.is_empty() {

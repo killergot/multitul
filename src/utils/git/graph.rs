@@ -1,9 +1,9 @@
-use crate::Message;
+use crate::utils::git::git_ref::GitRef;
 use crate::utils::git::commit::Commit;
 use crate::utils::git::hash::Hash;
 use crate::utils::git::ref_name::RefName;
 use crate::utils::git::repository::GitRepository;
-use std::alloc::Layout;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
@@ -76,6 +76,8 @@ impl GitGraph {
     }
 
     pub fn topo_for_layout(&self, repo: &GitRepository) -> Vec<GraphNodeView> {
+        // Обход графа с сохранением следующего свойства:
+            // Любой коммит будет идти раньше, чем любой его родитель
         let refs_map = repo.refs_by_hash();
         let start_hashes = start_hashes(self, repo);
 

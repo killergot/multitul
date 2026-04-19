@@ -17,17 +17,20 @@ impl GraphLayout {
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
         let mut lane_count = 0;
-
+        let mut for_free = Vec::new();
         let mut active_lanes = Vec::<Option<Hash>>::new();
 
         for node in nodes_input.iter() {
             let mut first_free_lane = None;
             let mut base_lane = None;
 
-            for (lane, hash) in active_lanes.iter().enumerate() {
+            for (lane, hash) in active_lanes.iter_mut().enumerate() {
                 match hash {
                     Some(hash) => {
                         if hash == &node.hash {
+                            if !base_lane.is_none() {
+                                for_free.push(base_lane);
+                            }
                             base_lane = Some(lane)
                         };
                     }
@@ -36,6 +39,7 @@ impl GraphLayout {
                     }
                 }
             }
+            for_free.iter().for_each(|lane| {active_lanes[lane.unwrap()] = None});
 
             match base_lane {
                 Some(lane) => {

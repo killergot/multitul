@@ -4,8 +4,6 @@ use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use crate::utils::git::commit::Commit;
-
 use crate::utils::git::git_error::GitError;
 use crate::utils::git::store::consts::{
     FAN_OUT_OFFSET_V2, FAN_OUT_SIZE, HASH_LEN_SHA1, HASHES_OFFSET_V2,

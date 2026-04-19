@@ -137,7 +137,7 @@ impl App {
                 .align_x(iced::alignment::Horizontal::Right)
                 .align_y(iced::alignment::Vertical::Bottom)
                 .padding(20),
-            container(git_widget(&self.git_state.graph))
+            container(git_widget(&self.git_state.layout))
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .align_x(iced::alignment::Horizontal::Left)

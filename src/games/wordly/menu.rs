@@ -191,12 +191,13 @@ impl Wordly {
                     self.all_worlds = WordProvider::get_all_wards();
                 }
                 if self.all_worlds.contains(&self.proccess_game.current_input) {
+                    let is_win = self.proccess_game.current_input == self.proccess_game.word;
                     self.proccess_game.update(message);
-                }
-                if self.proccess_game.current_input == self.proccess_game.word {
-                    self.state = WordlyState::FinishedWin;
-                } else if self.proccess_game.attempts.len() == MAX_ATTEMPTS {
-                    self.state = WordlyState::FinishedLose;
+                    if is_win {
+                        self.state = WordlyState::FinishedWin;
+                    } else if self.proccess_game.attempts.len() == MAX_ATTEMPTS {
+                        self.state = WordlyState::FinishedLose;
+                    }
                 }
             }
             _ => {
@@ -230,8 +231,8 @@ impl WordlyGame {
             keyboard.push((i.to_string(), Mark::default()));
         }
         let mut current_input = String::new();
-        // let word = "Пирог".to_string();
-        let word = WordProvider::get_one_word_5_ru();
+        let word = "пирог".to_string();
+        // let word = WordProvider::get_one_word_5_ru();
         let graphemes_count = word.graphemes(true).count();
         for i in 0..graphemes_count {
             current_input.push(' ');

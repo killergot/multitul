@@ -6,6 +6,7 @@ use iced::widget::canvas::{self, Cache, Geometry, LineCap, LineJoin, Path, Progr
 use iced::widget::Canvas;
 use iced::{mouse, Color, Element, Length, Pixels, Point, Rectangle, Renderer, Theme};
 use std::collections::HashMap;
+use crate::core::git::consts::*;
 
 pub fn git_widget<'a>(layout: &'a GraphLayout) -> Element<'a, Message> {
     Canvas::new(GitGraphCanvas::new(layout))
@@ -21,21 +22,6 @@ struct GitGraphCanvas<'a> {
     edge_cache: Cache,
     node_cache: Cache,
 }
-
-const LEFT_PAD: f32 = 12.0;
-const TOP_PAD: f32 = 12.0;
-const LANE_W: f32 = 18.0;
-const ROW_H: f32 = 26.0;
-const NODE_R: f32 = 4.0;
-const NODE_OUTLINE_R: f32 = 5.5;
-const LABEL_GAP: f32 = 18.0;
-const EDGE_WIDTH: f32 = 2.0;
-const MERGE_APPROACH_FACTOR: f32 = 0.35;
-const NODE_OUTLINE_COLOR: Color = Color::from_rgb8(28, 31, 38);
-
-const EDGE_COLOR : Color = Color::from_rgb8(110, 120, 140);
-const NODE_COLOR : Color = Color::from_rgb8(235, 235, 235);
-const TEXT_COLOR : Color = Color::from_rgb8(210, 210, 210);
 
 
 impl<'a> GitGraphCanvas<'a> {
@@ -166,7 +152,7 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
                 };
 
                 frame.fill_text(canvas::Text {
-                    content: format!("{}{}", node.message, refs),
+                    content: format!("{}{}", node.message.chars().take(20).collect::<String>(), refs),
                     position: Point::new(label_x, p.y),
                     color: TEXT_COLOR,
                     size: Pixels(14.0),

@@ -22,6 +22,7 @@ use crate::utils::git::graph_layout::GraphLayout;
 use crate::utils::git::provider::GitProvider;
 use crate::utils::git::state::GitState;
 use iced::widget::canvas::Cache;
+use crate::core::network::state::NetworkState;
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -32,6 +33,7 @@ fn main() -> iced::Result {
 
 struct App {
     screen: Screen,
+    network_state: Option<NetworkState>,
     git_state: GitState,
     git_edge_cache: Cache,
     git_node_cache: Cache,
@@ -58,6 +60,7 @@ impl App {
                 repo: provider.repository.clone(),
                 layout,
             },
+            network_state: NetworkState::check_network(),
             git_edge_cache: Cache::new(),
             git_node_cache: Cache::new(),
         }

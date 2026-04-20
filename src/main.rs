@@ -21,6 +21,7 @@ use crate::utils::git::GitStorage;
 use crate::utils::git::graph_layout::GraphLayout;
 use crate::utils::git::provider::GitProvider;
 use crate::utils::git::state::GitState;
+use iced::widget::canvas::Cache;
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -32,6 +33,8 @@ fn main() -> iced::Result {
 struct App {
     screen: Screen,
     git_state: GitState,
+    git_edge_cache: Cache,
+    git_node_cache: Cache,
 }
 
 impl App {
@@ -55,6 +58,8 @@ impl App {
                 repo: provider.repository.clone(),
                 layout,
             },
+            git_edge_cache: Cache::new(),
+            git_node_cache: Cache::new(),
         }
     }
 
@@ -140,9 +145,13 @@ impl App {
                 .align_y(iced::alignment::Vertical::Bottom)
                 .padding(20),
             container(
-                scrollable(git_widget(&self.git_state.layout))
-                    .height(220)
-                    .width(320)
+                scrollable(git_widget(
+                    &self.git_state.layout,
+                    &self.git_edge_cache,
+                    &self.git_node_cache
+                ))
+                .height(220)
+                .width(320)
             )
             .width(Length::Fill)
             .height(Length::Fill)

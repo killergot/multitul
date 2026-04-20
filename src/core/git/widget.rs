@@ -8,8 +8,12 @@ use iced::widget::canvas::{self, Cache, Geometry, LineCap, LineJoin, Path, Progr
 use iced::{Color, Element, Length, Pixels, Point, Rectangle, Renderer, Theme, mouse};
 use std::collections::HashMap;
 
-pub fn git_widget<'a>(layout: &'a GraphLayout) -> Element<'a, Message> {
-    Canvas::new(GitGraphCanvas::new(layout))
+pub fn git_widget<'a>(
+    layout: &'a GraphLayout,
+    edge_cache: &'a Cache,
+    node_cache: &'a Cache,
+) -> Element<'a, Message> {
+    Canvas::new(GitGraphCanvas::new(layout, edge_cache, node_cache))
         .width(Length::Fill)
         .height(Length::Fixed(
             TOP_PAD * 2.0 + layout.nodes.len() as f32 * ROW_H,
@@ -20,16 +24,16 @@ pub fn git_widget<'a>(layout: &'a GraphLayout) -> Element<'a, Message> {
 #[derive(Debug)]
 struct GitGraphCanvas<'a> {
     layout: &'a GraphLayout,
-    edge_cache: Cache,
-    node_cache: Cache,
+    edge_cache: &'a Cache,
+    node_cache: &'a Cache,
 }
 
 impl<'a> GitGraphCanvas<'a> {
-    fn new(layout: &'a GraphLayout) -> Self {
+    fn new(layout: &'a GraphLayout, edge_cache: &'a Cache, node_cache: &'a Cache) -> Self {
         Self {
             layout,
-            edge_cache: Cache::new(),
-            node_cache: Cache::new(),
+            edge_cache,
+            node_cache,
         }
     }
 

@@ -1,2 +1,2 @@
-pub mod widget;
 mod consts;
+pub mod widget;

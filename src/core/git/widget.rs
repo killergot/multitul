@@ -1,20 +1,21 @@
 use crate::Message;
+use crate::core::git::consts::*;
 use crate::utils::git::graph_layout::{GraphLayout, LayoutNode};
 use crate::utils::git::hash::Hash;
 use iced::alignment::Vertical;
-use iced::widget::canvas::{self, Cache, Geometry, LineCap, LineJoin, Path, Program, Stroke};
 use iced::widget::Canvas;
-use iced::{mouse, Color, Element, Length, Pixels, Point, Rectangle, Renderer, Theme};
+use iced::widget::canvas::{self, Cache, Geometry, LineCap, LineJoin, Path, Program, Stroke};
+use iced::{Color, Element, Length, Pixels, Point, Rectangle, Renderer, Theme, mouse};
 use std::collections::HashMap;
-use crate::core::git::consts::*;
 
 pub fn git_widget<'a>(layout: &'a GraphLayout) -> Element<'a, Message> {
     Canvas::new(GitGraphCanvas::new(layout))
         .width(Length::Fill)
-        .height(Length::Fixed(TOP_PAD * 2.0 + layout.nodes.len() as f32 * ROW_H))
+        .height(Length::Fixed(
+            TOP_PAD * 2.0 + layout.nodes.len() as f32 * ROW_H,
+        ))
         .into()
 }
-
 
 #[derive(Debug)]
 struct GitGraphCanvas<'a> {
@@ -22,7 +23,6 @@ struct GitGraphCanvas<'a> {
     edge_cache: Cache,
     node_cache: Cache,
 }
-
 
 impl<'a> GitGraphCanvas<'a> {
     fn new(layout: &'a GraphLayout) -> Self {
@@ -92,7 +92,7 @@ impl<'a> GitGraphCanvas<'a> {
     }
 }
 
-impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
+impl<'a, Message> Program<Message> for GitGraphCanvas<'a> {
     type State = ();
 
     fn draw(
@@ -101,17 +101,25 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
         renderer: &Renderer,
         _theme: &Theme,
         bounds: Rectangle,
-        _cursor: mouse::Cursor
+        _cursor: mouse::Cursor,
     ) -> Vec<Geometry> {
-        let hash_map_nodes : HashMap<Hash, &LayoutNode> =
-            self.layout.nodes.iter().map(|node| (node.hash.clone(), node)).collect();
+        let hash_map_nodes: HashMap<Hash, &LayoutNode> = self
+            .layout
+            .nodes
+            .iter()
+            .map(|node| (node.hash.clone(), node))
+            .collect();
 
         let label_x = LEFT_PAD + self.layout.lane_count as f32 * LANE_W + LABEL_GAP;
 
         let edges = self.edge_cache.draw(renderer, bounds.size(), |frame| {
             for edge in &self.layout.edges {
-                let Some(from_node) = hash_map_nodes.get(&edge.from) else { continue; };
-                let Some(to_node) = hash_map_nodes.get(&edge.to) else { continue; };
+                let Some(from_node) = hash_map_nodes.get(&edge.from) else {
+                    continue;
+                };
+                let Some(to_node) = hash_map_nodes.get(&edge.to) else {
+                    continue;
+                };
 
                 let from = self.node_point(from_node);
                 let to = self.node_point(to_node);
@@ -147,12 +155,20 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
                 } else {
                     format!(
                         " [{}]",
-                        node.refs.iter().map(|r| r.as_str()).collect::<Vec<_>>().join(", ")
+                        node.refs
+                            .iter()
+                            .map(|r| r.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
                     )
                 };
 
                 frame.fill_text(canvas::Text {
-                    content: format!("{}{}", node.message.chars().take(20).collect::<String>(), refs),
+                    content: format!(
+                        "{}{}",
+                        node.message.chars().take(20).collect::<String>(),
+                        refs
+                    ),
                     position: Point::new(label_x, p.y),
                     color: TEXT_COLOR,
                     size: Pixels(14.0),
@@ -164,4 +180,3 @@ impl <'a,Message> Program<Message> for GitGraphCanvas<'a> {
         vec![edges, nodes]
     }
 }
-

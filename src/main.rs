@@ -46,7 +46,7 @@ impl App {
         let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
 
-        println!("{:?}",layout);
+        println!("{:?}", layout);
 
         Self {
             screen: Screen::Main,
@@ -140,15 +140,15 @@ impl App {
                 .align_y(iced::alignment::Vertical::Bottom)
                 .padding(20),
             container(
-            scrollable(git_widget(&self.git_state.layout))
-              .height(220)
-              .width(320)
-              )
-              .width(Length::Fill)
-              .height(Length::Fill)
-              .align_x(iced::alignment::Horizontal::Left)
-              .align_y(iced::alignment::Vertical::Bottom)
-              .padding(20),
+                scrollable(git_widget(&self.git_state.layout))
+                    .height(220)
+                    .width(320)
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .align_x(iced::alignment::Horizontal::Left)
+            .align_y(iced::alignment::Vertical::Bottom)
+            .padding(20),
         ]
         .into()
     }

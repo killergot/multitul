@@ -41,7 +41,9 @@ impl GraphLayout {
                     }
                 }
             }
-            for_free.iter().for_each(|lane| {active_lanes[lane.unwrap()] = None});
+            for_free
+                .iter()
+                .for_each(|lane| active_lanes[lane.unwrap()] = None);
 
             match base_lane {
                 Some(lane) => {

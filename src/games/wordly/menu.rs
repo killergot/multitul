@@ -231,8 +231,8 @@ impl WordlyGame {
             keyboard.push((i.to_string(), Mark::default()));
         }
         let mut current_input = String::new();
-        let word = "пирог".to_string();
-        // let word = WordProvider::get_one_word_5_ru();
+        // let word = "пирог".to_string();
+        let word = WordProvider::get_one_word_5_ru();
         let graphemes_count = word.graphemes(true).count();
         for i in 0..graphemes_count {
             current_input.push(' ');

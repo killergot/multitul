@@ -7,7 +7,7 @@ use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::keyboard::Key;
 use iced::keyboard::key::Named;
-use iced::widget::{container, scrollable, stack};
+use iced::widget::{container, scrollable, stack, svg};
 use iced::{
     Element, Length, Theme,
     widget::{button, column, text},
@@ -22,6 +22,7 @@ use crate::utils::git::graph_layout::GraphLayout;
 use crate::utils::git::provider::GitProvider;
 use crate::utils::git::state::GitState;
 use iced::widget::canvas::Cache;
+use crate::core::network::network::Network;
 use crate::core::network::state::NetworkState;
 
 fn main() -> iced::Result {
@@ -33,7 +34,7 @@ fn main() -> iced::Result {
 
 struct App {
     screen: Screen,
-    network_state: Option<NetworkState>,
+    network: Network,
     git_state: GitState,
     git_edge_cache: Cache,
     git_node_cache: Cache,
@@ -51,7 +52,7 @@ impl App {
         let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
 
-        println!("{:?}", layout);
+        let network = Network::new(NetworkState::check_network());
 
         Self {
             screen: Screen::Main,
@@ -60,7 +61,7 @@ impl App {
                 repo: provider.repository.clone(),
                 layout,
             },
-            network_state: NetworkState::check_network(),
+            network,
             git_edge_cache: Cache::new(),
             git_node_cache: Cache::new(),
         }
@@ -161,6 +162,16 @@ impl App {
             .align_x(iced::alignment::Horizontal::Left)
             .align_y(iced::alignment::Vertical::Bottom)
             .padding(20),
+            container(
+                svg(self.network.get_icon().clone())
+                      .width(24)
+                      .height(24)
+              )
+              .width(Length::Fill)
+              .height(Length::Fill)
+              .align_x(iced::alignment::Horizontal::Right)
+              .align_y(iced::alignment::Vertical::Top)
+              .padding(20),
         ]
         .into()
     }

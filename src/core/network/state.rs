@@ -25,7 +25,11 @@ impl NetworkState {
                     _ => Some(NetworkState::Low)
                 }
             },
-            Err(e) => None
+            Err(e) =>
+                {
+                    println!("Error while check network");
+                    None
+                }
         }
     }
 }

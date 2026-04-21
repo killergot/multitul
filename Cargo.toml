@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-iced = { version = "0.14", features = ["canvas"] }
+iced = { version = "0.14", features = ["canvas", "svg", "tokio"] }
 unicode-segmentation = "1.12.0"
 rand = "0.8"
 log = "0.4"
 env_logger = "0.11"
 flate2 = "1.0"
+ping-rs = "0.1.2"
+futures = "0.3.32"
+time = "0.3.47"

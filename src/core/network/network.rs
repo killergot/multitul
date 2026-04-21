@@ -58,7 +58,7 @@ impl Network {
         }
     }
 
-    pub fn check_network(&mut self){
-        self.state = NetworkState::check_network();
+    pub async fn check_network(&mut self){
+        self.state = NetworkState::check_network().await ;
     }
 }

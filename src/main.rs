@@ -3,15 +3,14 @@ mod games;
 mod macros;
 mod utils;
 
+use std::time::Duration;
+use iced::time::every;
 use crate::games::wordly::{Wordly, WordlyMessage};
 
 use iced::keyboard::Key;
 use iced::keyboard::key::Named;
 use iced::widget::{container, scrollable, stack, svg};
-use iced::{
-    Element, Length, Theme,
-    widget::{button, column, text},
-};
+use iced::{Element, Length, Theme, widget::{button, column, text}, Task};
 use iced::{Event, Subscription, event, keyboard};
 
 use crate::core::git::widget::git_widget;
@@ -52,7 +51,7 @@ impl App {
         let ordered_nodes = graph.topo_for_layout(&provider.repository);
         let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
 
-        let network = Network::new(NetworkState::check_network());
+        let network = Network::new(None);
 
         Self {
             screen: Screen::Main,
@@ -68,49 +67,69 @@ impl App {
     }
 
     fn subscription(_app: &Self) -> Subscription<Message> {
-        event::listen_with(|event, _status, _window| match event {
-            Event::Keyboard(keyboard::Event::KeyPressed { key, text, .. }) => match key.as_ref() {
-                Key::Named(Named::ArrowLeft) => Some(Message::KeyPressed(KeyMessage::Left)),
-                Key::Named(Named::ArrowRight) => Some(Message::KeyPressed(KeyMessage::Right)),
-                Key::Named(Named::Backspace) => Some(Message::KeyPressed(KeyMessage::Backspace)),
-                Key::Named(Named::Enter) => Some(Message::KeyPressed(KeyMessage::Enter)),
-                _ => text.map(|t| Message::KeyPressed(KeyMessage::Char(t.to_string()))),
-            },
-            _ => None,
-        })
+        Subscription::batch([
+            event::listen_with(|event, _status, _window| match event {
+                Event::Keyboard(keyboard::Event::KeyPressed { key, text, .. }) => match key.as_ref() {
+                    Key::Named(Named::ArrowLeft) => Some(Message::KeyPressed(KeyMessage::Left)),
+                    Key::Named(Named::ArrowRight) => Some(Message::KeyPressed(KeyMessage::Right)),
+                    Key::Named(Named::Backspace) => Some(Message::KeyPressed(KeyMessage::Backspace)),
+                    Key::Named(Named::Enter) => Some(Message::KeyPressed(KeyMessage::Enter)),
+                    _ => text.map(|t| Message::KeyPressed(KeyMessage::Char(t.to_string()))),
+                },
+                _ => None,
+            }),
+            every(Duration::from_secs(1)).map(|_| Message::NetworkTick),
+        ])
     }
 
-    fn update(app: &mut Self, message: Message) {
+    fn update(app: &mut Self, message: Message) -> Task<Message> {
         match message {
+            Message::NetworkTick => {
+                Task::perform(NetworkState::check_network(), Message::NetworkChecked)
+            }
+            Message::NetworkChecked(state) => {
+                app.network.set_state(state);
+                Task::none()
+            }
             Message::KeyPressed(key_msg) => {
                 if let Screen::Wordly(wordly) = &mut app.screen {
                     wordly.key_pressed(key_msg);
                 }
+                Task::none()
+
             }
             Message::Counter(msg) => match msg {
                 CounterMessage::Increment => {
                     if let Screen::Counter(counter) = &mut app.screen {
                         counter.value += 1;
                     }
+                    Task::none()
+
                 }
                 CounterMessage::Decrement => {
                     if let Screen::Counter(counter) = &mut app.screen {
                         counter.value -= 1;
                     }
+                    Task::none()
+
                 }
             },
             Message::Wordly(msg) => match msg {
                 WordlyMessage::GoHome => {
                     app.screen = Screen::Main;
+                    Task::none()
                 }
                 msg => {
                     if let Screen::Wordly(wordly) = &mut app.screen {
                         wordly.update(msg);
                     }
+                    Task::none()
+
                 }
             },
             Message::SwitchTo(msg) => {
                 app.screen = msg;
+                Task::none()
             }
         }
     }
@@ -194,6 +213,8 @@ enum Message {
     Counter(CounterMessage),
     Wordly(WordlyMessage),
     KeyPressed(KeyMessage),
+    NetworkTick,
+    NetworkChecked(Option<NetworkState>)
 }
 
 #[derive(Debug, Clone)]

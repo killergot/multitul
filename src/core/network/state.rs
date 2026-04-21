@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+#[derive(Clone,Debug)]
 pub enum NetworkState {
     High,
     Normal,
@@ -8,7 +9,7 @@ pub enum NetworkState {
 }
 
 impl NetworkState {
-    pub fn check_network() -> Option<NetworkState> {
+    pub async fn check_network() -> Option<NetworkState> {
         let addr = "8.8.8.8".parse().unwrap();
         let data = [1,2,3,4];  // ping data
         let data_arc = Arc::new(&data[..]);
@@ -25,7 +26,7 @@ impl NetworkState {
                     _ => Some(NetworkState::Low)
                 }
             },
-            Err(e) =>
+            Err(_) =>
                 {
                     println!("Error while check network");
                     None

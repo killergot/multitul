@@ -1,0 +1,7 @@
+services:
+  game-server:
+    build: .
+    container_name: association-game-server
+    ports:
+      - "8765:8765"
+    restart: unless-stopped

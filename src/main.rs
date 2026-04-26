@@ -23,6 +23,7 @@ use crate::utils::git::state::GitState;
 use iced::widget::canvas::Cache;
 use crate::core::network::network::Network;
 use crate::core::network::state::NetworkState;
+use crate::games::one_brain::menu::{Brain, BrainMessage};
 
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
@@ -127,6 +128,18 @@ impl App {
 
                 }
             },
+            Message::Brain(msg) => match msg {
+                BrainMessage::GoHome => {
+                    app.screen = Screen::Main;
+                    Task::none()
+                }
+                msg =>{
+                    if let Screen::Brain(brain) = &mut app.screen {
+                        brain.update(msg);
+                    }
+                    Task::none()
+                }
+            }
             Message::SwitchTo(msg) => {
                 app.screen = msg;
                 Task::none()
@@ -146,10 +159,12 @@ impl App {
             .padding(20)
             .into(),
             Screen::Wordly(wordly_game) => wordly_game.view().map(Message::Wordly),
+            Screen::Brain(brain) => brain.view().map(Message::Brain),
             Screen::Main => column![
                 text(format!("My multitul")),
                 button("counter").on_press(Message::SwitchTo(Screen::Counter(Counter::default()))),
                 button("wordly").on_press(Message::SwitchTo(Screen::Wordly(Wordly::default()))),
+                button("one brain").on_press(Message::SwitchTo(Screen::Brain(Brain::default())))
             ]
             .spacing(12)
             .padding(20)
@@ -199,6 +214,7 @@ impl App {
 enum Screen {
     Counter(Counter),
     Wordly(Wordly),
+    Brain(Brain),
     Main,
 }
 
@@ -212,6 +228,7 @@ enum Message {
     SwitchTo(Screen),
     Counter(CounterMessage),
     Wordly(WordlyMessage),
+    Brain(BrainMessage),
     KeyPressed(KeyMessage),
     NetworkTick,
     NetworkChecked(Option<NetworkState>)

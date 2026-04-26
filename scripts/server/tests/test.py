@@ -1,3 +1,11 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = [
+#   "websockets",
+# ]
+# ///
+
+
 import asyncio
 import json
 import argparse

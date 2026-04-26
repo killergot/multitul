@@ -123,7 +123,8 @@ impl Wordly {
                 button("Start game").on_press(WordlyMessage::GoPlay),
                 button("Go home").on_press(WordlyMessage::GoHome)
             ]
-            .into(),
+                .spacing(10)
+                .into(),
             WordlyState::InGame => column![
                 attempt_widget(&self.proccess_game.attempts),
                 input_attempt_widget(

@@ -6,10 +6,11 @@ use super::styles;
 use super::word_provider::WordProvider;
 use crate::KeyMessage;
 use crate::games::wordly::mark::Mark;
+use crate::utils::style::{self, DISPLAY_FONT, TEXT_DIM};
 use iced::widget::row;
 use iced::{
-    Element, Padding,
-    alignment::Horizontal,
+    Element, Length, Padding,
+    alignment::{Horizontal, Vertical},
     widget::{button, column, container, text},
 };
 
@@ -104,8 +105,14 @@ fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyM
             .map(|(symbol, mark)| key_widget(symbol.as_str(), *mark)))
         .spacing(BASE_SPACE),
         row![
-            button(text("submit")).on_press(WordlyMessage::SubmitAttempt),
-            button(text("<- Backspace")).on_press(WordlyMessage::BackspaceClicked),
+            button(text("⌫ Стереть").size(13).center())
+                .on_press(WordlyMessage::BackspaceClicked)
+                .padding(Padding::from([8, 14]))
+                .style(styles::ghost_button),
+            button(text("Подтвердить").size(13).center())
+                .on_press(WordlyMessage::SubmitAttempt)
+                .padding(Padding::from([8, 14]))
+                .style(styles::primary_button),
         ]
         .padding([BASE_SPACE as u16, 0])
         .spacing(BASE_SPACE),
@@ -115,59 +122,114 @@ fn keyboard_widget<'a>(keyboard: &'a Vec<(String, Mark)>) -> Element<'a, WordlyM
     .into()
 }
 
+fn wordly_menu_button(label: &str, message: WordlyMessage) -> button::Button<'_, WordlyMessage> {
+    button(text(label).size(15).center())
+        .on_press(message)
+        .padding(Padding::from([12, 18]))
+        .width(Length::Fill)
+        .style(styles::ghost_button)
+}
+
 impl Wordly {
     pub fn view(&self) -> Element<'_, WordlyMessage> {
         match self.state {
-            WordlyState::Menu => column![
-                text("Wordly"),
-                button("Start game").on_press(WordlyMessage::GoPlay),
-                button("Go home").on_press(WordlyMessage::GoHome)
-            ]
-                .spacing(10)
-                .into(),
-            WordlyState::InGame => column![
-                attempt_widget(&self.proccess_game.attempts),
-                input_attempt_widget(
-                    self.proccess_game.current_input.as_str(),
-                    self.proccess_game.cursor
+            WordlyState::Menu => self.menu_screen("WORDLY", "Угадайте слово из пяти букв"),
+            WordlyState::InGame => container(
+                column![
+                    attempt_widget(&self.proccess_game.attempts),
+                    input_attempt_widget(
+                        self.proccess_game.current_input.as_str(),
+                        self.proccess_game.cursor
+                    ),
+                    keyboard_widget(&self.proccess_game.keyboard),
+                ]
+                .spacing(BASE_SPACE)
+                .align_x(Horizontal::Center),
+            )
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .padding(24)
+            .into(),
+            WordlyState::FinishedWin => self.finished_screen(
+                "Победа",
+                format!(
+                    "Слово «{}» взято за {} попыток.",
+                    self.proccess_game.word,
+                    self.proccess_game.attempts.len()
                 ),
-                keyboard_widget(&self.proccess_game.keyboard),
-            ]
-            .align_x(Horizontal::Center)
-            .into(),
-            WordlyState::FinishedWin => column![
-                text("Finished"),
-                text("You win"),
-                text(format!(
-                    "You spent {} attempts for word \"{}\"",
-                    self.proccess_game.attempts.len(),
+            ),
+            WordlyState::FinishedLose => self.finished_screen(
+                "Поражение",
+                format!(
+                    "Слово было «{}». Шесть попыток исчерпаны.",
                     self.proccess_game.word
-                )),
-                attempt_widget(&self.proccess_game.attempts),
-                button("Go to menu")
-                    .on_press(WordlyMessage::GoHome)
-                    .padding([10, 14])
-            ]
-            .into(),
-            WordlyState::FinishedLose => column![
-                text("Finished"),
-                text("You Lose"),
-                text(format!(
-                    "You spent 6 attempts for word \"{}\" and not predict!",
-                    self.proccess_game.word
-                )),
-                attempt_widget(&self.proccess_game.attempts),
-                button("Main menu")
-                    .on_press(WordlyMessage::GoHome)
-                    .padding([10, 14]),
-                button("Wordly menu")
-                    .on_press(WordlyMessage::GoHome)
-                    .padding([10, 14])
-            ]
-            .spacing(BASE_SPACE)
-            .into(),
-            _ => iced::widget::column![].into(),
+                ),
+            ),
         }
+    }
+
+    fn menu_screen<'a>(&'a self, title: &'a str, subtitle: &'a str) -> Element<'a, WordlyMessage> {
+        let panel = container(
+            column![
+                container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
+                    .style(style::accent_strip),
+                text(title).font(DISPLAY_FONT).size(48),
+                text(subtitle)
+                    .size(14)
+                    .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+                container(text("")).height(12),
+                wordly_menu_button("01 · Начать партию", WordlyMessage::GoPlay),
+                wordly_menu_button("02 · В главное меню", WordlyMessage::GoHome),
+            ]
+            .spacing(12)
+            .align_x(Horizontal::Center),
+        )
+        .padding(Padding::from([28, 32]))
+        .width(Length::Fixed(360.0))
+        .style(styles::menu_panel);
+
+        container(panel)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .align_x(Horizontal::Center)
+            .align_y(Vertical::Center)
+            .padding(24)
+            .into()
+    }
+
+    fn finished_screen<'a>(
+        &'a self,
+        title: &'a str,
+        subtitle: String,
+    ) -> Element<'a, WordlyMessage> {
+        let panel = container(
+            column![
+                container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
+                    .style(style::accent_strip),
+                text(title).font(DISPLAY_FONT).size(40),
+                text(subtitle)
+                    .size(14)
+                    .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+                container(attempt_widget(&self.proccess_game.attempts))
+                    .center_x(Length::Fill),
+                container(text("")).height(8),
+                wordly_menu_button("01 · Снова в бой", WordlyMessage::GoPlay),
+                wordly_menu_button("02 · В главное меню", WordlyMessage::GoHome),
+            ]
+            .spacing(12)
+            .align_x(Horizontal::Center),
+        )
+        .padding(Padding::from([28, 32]))
+        .width(Length::Fixed(420.0))
+        .style(styles::menu_panel);
+
+        container(panel)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .align_x(Horizontal::Center)
+            .align_y(Vertical::Center)
+            .padding(24)
+            .into()
     }
 
     pub fn key_pressed(&mut self, key_msg: KeyMessage) {

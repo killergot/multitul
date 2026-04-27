@@ -327,8 +327,8 @@ impl Brain {
     }
 
     fn join_form_stage_view(&self) -> Element<'_, BrainMessage> {
-        let connect_button = button("Подключиться")
-            .padding(16)
+        let connect_button = button(text("Подключиться").size(13).center())
+            .padding(Padding::from([10, 14]))
             .width(Length::Fill)
             .style(styles::primary_button)
             .on_press(BrainMessage::ConnectPressed);
@@ -336,35 +336,35 @@ impl Brain {
         column![
             self.stage_header_view(
                 "Подключение к комнате",
-                "Соберите пару параметров и откройте сессию. После этого центральная панель переключится в боевой режим."
+                "Соберите room id и имя — и сцена переключится в боевой режим."
             ),
             container(
                 column![
-                    text("Форма входа").size(24),
+                    text("Форма входа").size(16),
                     text_input("room id", &self.room_id_input)
                         .on_input(BrainMessage::RoomIdChanged)
                         .style(styles::warm_input)
-                        .padding(14)
-                        .size(18),
+                        .padding(Padding::from([10, 12]))
+                        .size(15),
                     text_input("имя игрока", &self.name_input)
                         .on_input(BrainMessage::NameChanged)
                         .style(styles::game_input)
-                        .padding(14)
-                        .size(18),
+                        .padding(Padding::from([10, 12]))
+                        .size(15),
                     connect_button,
                 ]
-                .spacing(14),
+                .spacing(10),
             )
-            .padding(24)
+            .padding(Padding::from([14, 16]))
             .width(Length::Fill)
             .style(styles::card),
             row![
                 self.feature_card("Подсказка", "Название комнаты должно совпасть у обоих игроков."),
-                self.feature_card("Лайв-чат", "После входа чат активируется в правой колонке."),
+                self.feature_card("Лайв-чат", "Чат активируется в правой колонке."),
             ]
-            .spacing(14),
+            .spacing(10),
         ]
-        .spacing(18)
+        .spacing(12)
         .into()
     }
 
@@ -372,27 +372,28 @@ impl Brain {
         column![
             self.stage_header_view(
                 "Соединение на линии",
-                "Клиент уже открыл канал и ждёт подтверждение от сервера."
+                "Канал открыт, ждём подтверждение."
             ),
             row![
                 self.stat_card("Сервер", &self.server_url),
                 self.stat_card("Комната", &self.room_id_input),
                 self.stat_card("Игрок", &self.name_input),
             ]
-            .spacing(14),
+            .spacing(10),
             container(
                 column![
-                    text("Ожидание joined / room_state").size(22),
-                    text("Как только сервер пришлёт joined, центральная сцена переключится на карточки раунда и журнал слов.")
-                        .size(16),
+                    text("Ожидание joined / room_state").size(15),
+                    text("Как только сервер пришлёт joined — переключим сцену на раунд и журнал.")
+                        .size(13)
+                        .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
                 ]
-                .spacing(10),
+                .spacing(6),
             )
-            .padding(24)
+            .padding(Padding::from([14, 16]))
             .width(Length::Fill)
             .style(styles::accent_card),
         ]
-        .spacing(18)
+        .spacing(12)
         .into()
     }
 
@@ -403,8 +404,8 @@ impl Brain {
             "Активный раунд"
         };
 
-        let mut send_word_button = button(text("Отправить слово").size(15))
-            .padding(Padding::from([12, 18]))
+        let mut send_word_button = button(text("Отправить слово").size(13).center())
+            .padding(Padding::from([10, 14]))
             .style(styles::primary_button);
 
         if !is_finished {
@@ -412,17 +413,17 @@ impl Brain {
         }
 
         let player_list = if self.players.is_empty() {
-            column![text("Игроки появятся после room_state.").size(14)]
+            column![text("Игроки появятся после room_state.").size(13)]
         } else {
             self.players.iter().fold(column![], |column, player| {
-                column.push(text(format!("• {}", player)).size(14))
+                column.push(text(format!("• {}", player)).size(13))
             })
         };
 
         column![
             self.stage_header_view(
                 "Игровая сцена",
-                "Центральная панель показывает текущий ввод, последнее отправленное слово и историю совпадений по раундам."
+                "Текущий ввод, последняя отправка и история совпадений."
             ),
             row![
                 self.stat_card(
@@ -440,17 +441,17 @@ impl Brain {
                 self.stat_card("Раунд", &self.round.to_string()),
                 self.stat_card("Статус", status),
             ]
-            .spacing(14),
+            .spacing(8),
             row![
                 container(
                     column![
-                        text("Пульт слова").size(22),
+                        text("Пульт слова").size(15),
                         text_input("Введите слово", &self.word_input)
                             .on_input(BrainMessage::WordInputChanged)
                             .on_submit(BrainMessage::SendWord)
                             .style(styles::game_input)
-                            .padding(Padding::from([14, 16]))
-                            .size(18),
+                            .padding(Padding::from([10, 12]))
+                            .size(15),
                         row![
                             self.word_info_card(
                                 "Черновик",
@@ -467,19 +468,19 @@ impl Brain {
                                     .unwrap_or("Ещё не отправлялось"),
                             ),
                         ]
-                        .spacing(12),
+                        .spacing(8),
                         send_word_button,
                     ]
-                    .spacing(14),
+                    .spacing(8),
                 )
-                .padding(Padding::from([18, 20]))
+                .padding(Padding::from([12, 14]))
                 .width(Length::FillPortion(2))
                 .style(styles::accent_card),
                 container(
                     column![
-                        text("Ритм комнаты").size(22),
+                        text("Ритм комнаты").size(15),
                         text(format!("Готовность: {}/{}", self.ready_count, self.total_players))
-                            .size(15),
+                            .size(13),
                         text(if self.finished {
                             "Оба игрока уже сошлись."
                         } else if self.ready_count > 0 {
@@ -487,30 +488,30 @@ impl Brain {
                         } else {
                             "Раунд ещё не начинался."
                         })
-                        .size(15),
-                        text("Игроки").size(16),
+                        .size(13),
+                        text("Игроки").size(13),
                         player_list,
                     ]
-                    .spacing(10),
+                    .spacing(6),
                 )
-                .padding(Padding::from([18, 20]))
+                .padding(Padding::from([12, 14]))
                 .width(Length::FillPortion(1))
                 .style(styles::card),
             ]
-            .spacing(14),
+            .spacing(8),
             container(
                 column![
-                    text("Журнал введённых слов").size(22),
+                    text("Журнал слов").size(15),
                     self.round_history_view(),
                 ]
-                .spacing(12),
+                .spacing(8),
             )
-            .padding(Padding::from([18, 20]))
+            .padding(Padding::from([12, 14]))
             .width(Length::Fill)
             .height(Length::Fill)
             .style(styles::card),
         ]
-        .spacing(16)
+        .spacing(10)
         .height(Length::Fill)
         .into()
     }
@@ -577,20 +578,34 @@ impl Brain {
 
     fn stage_header_view<'a>(&self, title: &'a str, subtitle: &'a str) -> Element<'a, BrainMessage> {
         container(
-            column![text(title).size(28), text(subtitle).size(15)].spacing(10),
+            column![
+                text(title).size(20),
+                text(subtitle)
+                    .size(12)
+                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+            ]
+            .spacing(4),
         )
-        .padding(Padding::from([20, 22]))
+        .padding(Padding::from([12, 14]))
         .width(Length::Fill)
         .style(styles::accent_card)
         .into()
     }
 
     fn feature_card<'a>(&self, title: &'a str, body: &'a str) -> Element<'a, BrainMessage> {
-        container(column![text(title).size(18), text(body).size(14)].spacing(8))
-            .padding(Padding::from([16, 18]))
-            .width(Length::FillPortion(1))
-            .style(styles::card)
-            .into()
+        container(
+            column![
+                text(title).size(13),
+                text(body)
+                    .size(12)
+                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+            ]
+            .spacing(4),
+        )
+        .padding(Padding::from([10, 12]))
+        .width(Length::FillPortion(1))
+        .style(styles::card)
+        .into()
     }
 
     fn stat_card(
@@ -601,11 +616,19 @@ impl Brain {
         let title = title.into();
         let value = value.into();
 
-        container(column![text(title).size(13), text(value).size(18)].spacing(6))
-            .padding(Padding::from([14, 16]))
-            .width(Length::FillPortion(1))
-            .style(styles::card)
-            .into()
+        container(
+            column![
+                text(title)
+                    .size(11)
+                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                text(value).size(14),
+            ]
+            .spacing(3),
+        )
+        .padding(Padding::from([8, 10]))
+        .width(Length::FillPortion(1))
+        .style(styles::card)
+        .into()
     }
 
     fn word_info_card(
@@ -616,11 +639,19 @@ impl Brain {
         let title = title.into();
         let value = value.into();
 
-        container(column![text(title).size(13), text(value).size(17)].spacing(6))
-            .padding(Padding::from([14, 16]))
-            .width(Length::FillPortion(1))
-            .style(styles::word_card)
-            .into()
+        container(
+            column![
+                text(title)
+                    .size(11)
+                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                text(value).size(13),
+            ]
+            .spacing(3),
+        )
+        .padding(Padding::from([8, 10]))
+        .width(Length::FillPortion(1))
+        .style(styles::word_card)
+        .into()
     }
 
     fn round_history_view(&self) -> Element<'_, BrainMessage> {
@@ -628,13 +659,14 @@ impl Brain {
             column![
                 container(
                     column![
-                        text("Пока раунды не завершались.").size(17),
-                        text("Когда сервер пришлёт round_result, здесь появятся карточки с обоими словами.")
-                            .size(14),
+                        text("Пока раунды не завершались.").size(13),
+                        text("После round_result здесь появятся карточки с обоими словами.")
+                            .size(12)
+                            .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
                     ]
-                    .spacing(6),
+                    .spacing(4),
                 )
-                .padding(Padding::from([16, 18]))
+                .padding(Padding::from([10, 12]))
                 .width(Length::Fill)
                 .style(styles::word_card)
             ]
@@ -643,28 +675,29 @@ impl Brain {
                 .iter()
                 .fold(column![], |column, summary| {
                     let words = if summary.words.is_empty() {
-                        column![text("Слова ещё не зафиксированы.").size(14)]
+                        column![text("Слова ещё не зафиксированы.").size(12)]
                     } else {
                         summary.words.iter().fold(column![], |column, (player, word)| {
-                            column.push(text(format!("{} -> {}", player, word)).size(14))
+                            column.push(text(format!("{} → {}", player, word)).size(12))
                         })
                     };
 
                     column.push(
                         container(
                             column![
-                                text(format!("Раунд {}", summary.round)).size(18),
+                                text(format!("Раунд {}", summary.round)).size(14),
                                 text(if summary.is_match {
                                     "Совпадение найдено"
                                 } else {
                                     "Мысли ещё расходятся"
                                 })
-                                .size(14),
+                                .size(12)
+                                .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
                                 words,
                             ]
-                            .spacing(8),
+                            .spacing(4),
                         )
-                        .padding(Padding::from([16, 18]))
+                        .padding(Padding::from([10, 12]))
                         .width(Length::Fill)
                         .style(move |theme| styles::round_card(theme, summary.is_match)),
                     )

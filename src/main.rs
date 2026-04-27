@@ -7,11 +7,16 @@ use std::time::Duration;
 use iced::time::every;
 use crate::games::wordly::{Wordly, WordlyMessage};
 
+use iced::alignment::{Horizontal, Vertical};
 use iced::keyboard::Key;
 use iced::keyboard::key::Named;
 use iced::widget::{container, mouse_area, row, scrollable, stack, svg};
-use iced::{Background, Border, Color, Element, Length, Theme, widget::{button, column, text}, Task};
+use iced::{Background, Border, Color, Element, Length, Padding, Theme, widget::{button, column, text}, Task};
 use iced::{Event, Subscription, event, keyboard, mouse};
+
+use crate::utils::style::{
+    self as design, ACCENT, BODY_FONT, DISPLAY_FONT, DIVIDER, SURFACE_1, TEXT_DIM,
+};
 
 use crate::core::git::widget::git_widget;
 use crate::core::sign::sign_widget;
@@ -25,7 +30,7 @@ use crate::core::network::network::Network;
 use crate::core::network::state::NetworkState;
 use crate::games::one_brain::menu::{Brain, BrainMessage};
 
-const SPLITTER_HEIGHT: f32 = 2.0;
+const SPLITTER_HEIGHT: f32 = 5.0;
 const BOTTOM_PANEL_DEFAULT: f32 = 250.0;
 const BOTTOM_PANEL_MIN: f32 = 80.0;
 const BOTTOM_PANEL_MAX: f32 = 800.0;
@@ -33,6 +38,7 @@ const BOTTOM_PANEL_MAX: f32 = 800.0;
 fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
         .theme(theme)
+        .default_font(BODY_FONT)
         .subscription(App::subscription)
         .run()
 }
@@ -189,26 +195,10 @@ impl App {
 
     fn view(&self) -> Element<'_, Message> {
         let content: Element<'_, Message> = match &self.screen {
-            Screen::Counter(counter) => column![
-                text(format!("Значение: {}", counter.value)),
-                button("Увеличить").on_press(Message::Counter(CounterMessage::Increment)),
-                button("Уменьшить").on_press(Message::Counter(CounterMessage::Decrement)),
-                button("Go home").on_press(Message::SwitchTo(Screen::Main))
-            ]
-            .spacing(12)
-            .padding(20)
-            .into(),
+            Screen::Counter(counter) => counter_screen(counter.value),
             Screen::Wordly(wordly_game) => wordly_game.view().map(Message::Wordly),
             Screen::Brain(brain) => brain.view().map(Message::Brain),
-            Screen::Main => column![
-                text(format!("My multitul")),
-                button("counter").on_press(Message::SwitchTo(Screen::Counter(Counter::default()))),
-                button("wordly").on_press(Message::SwitchTo(Screen::Wordly(Wordly::default()))),
-                button("one brain").on_press(Message::SwitchTo(Screen::Brain(Brain::default())))
-            ]
-            .spacing(12)
-            .padding(20)
-            .into(),
+            Screen::Main => main_screen(),
         };
 
         let top_area = container(content)
@@ -275,7 +265,7 @@ impl App {
 
 fn splitter_track_style(_theme: &Theme) -> container::Style {
     container::Style {
-        background: Some(Background::Color(Color::from_rgba(0.86, 0.50, 0.27, 0.45))),
+        background: Some(Background::Color(ACCENT.scale_alpha(0.45))),
         border: Border {
             radius: 0.0.into(),
             width: 0.0,
@@ -287,14 +277,110 @@ fn splitter_track_style(_theme: &Theme) -> container::Style {
 
 fn bottom_dock_style(_theme: &Theme) -> container::Style {
     container::Style {
-        background: Some(Background::Color(Color::from_rgb(0.08, 0.10, 0.14))),
+        background: Some(Background::Color(SURFACE_1)),
         border: Border {
             radius: 0.0.into(),
-            width: 0.0,
-            color: Color::TRANSPARENT,
+            width: 1.0,
+            color: DIVIDER,
         },
         ..Default::default()
     }
+}
+
+fn menu_link_button(label: &str, message: Message) -> button::Button<'_, Message> {
+    button(text(label).size(15).center())
+        .on_press(message)
+        .padding(Padding::from([12, 18]))
+        .width(Length::Fill)
+        .style(design::ghost_button)
+}
+
+fn main_screen() -> Element<'static, Message> {
+    let panel = container(
+        column![
+            container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
+                .style(design::accent_strip),
+            text("MULTITUL").font(DISPLAY_FONT).size(54),
+            text("Сборник iced-экспериментов в одном окне")
+                .size(14)
+                .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+            container(text("")).height(12),
+            menu_link_button(
+                "01 · Counter",
+                Message::SwitchTo(Screen::Counter(Counter::default())),
+            ),
+            menu_link_button(
+                "02 · Wordly",
+                Message::SwitchTo(Screen::Wordly(Wordly::default())),
+            ),
+            menu_link_button(
+                "03 · One Brain",
+                Message::SwitchTo(Screen::Brain(Brain::default())),
+            ),
+        ]
+        .spacing(12)
+        .align_x(Horizontal::Center),
+    )
+    .padding(Padding::from([28, 32]))
+    .width(Length::Fixed(360.0))
+    .style(design::surface);
+
+    container(panel)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .align_x(Horizontal::Center)
+        .align_y(Vertical::Center)
+        .padding(24)
+        .into()
+}
+
+fn counter_screen(value: i32) -> Element<'static, Message> {
+    let panel = container(
+        column![
+            container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
+                .style(design::accent_strip),
+            text("COUNTER").font(DISPLAY_FONT).size(36),
+            text("Простейший пример состояния")
+                .size(13)
+                .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+            container(text("")).height(8),
+            text(format!("{}", value))
+                .font(DISPLAY_FONT)
+                .size(72)
+                .style(|_| iced::widget::text::Style { color: Some(ACCENT) }),
+            container(text("")).height(8),
+            row![
+                button(text("−").size(20).center())
+                    .on_press(Message::Counter(CounterMessage::Decrement))
+                    .padding(Padding::from([10, 22]))
+                    .style(design::ghost_button),
+                button(text("+").size(20).center())
+                    .on_press(Message::Counter(CounterMessage::Increment))
+                    .padding(Padding::from([10, 22]))
+                    .style(design::primary_button),
+            ]
+            .spacing(10),
+            container(text("")).height(4),
+            button(text("В меню").size(14).center())
+                .on_press(Message::SwitchTo(Screen::Main))
+                .padding(Padding::from([10, 18]))
+                .width(Length::Fill)
+                .style(design::ghost_button),
+        ]
+        .spacing(10)
+        .align_x(Horizontal::Center),
+    )
+    .padding(Padding::from([28, 32]))
+    .width(Length::Fixed(320.0))
+    .style(design::surface);
+
+    container(panel)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .align_x(Horizontal::Center)
+        .align_y(Vertical::Center)
+        .padding(24)
+        .into()
 }
 
 #[derive(Debug, Clone)]

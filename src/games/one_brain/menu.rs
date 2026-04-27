@@ -1,9 +1,13 @@
 use futures::SinkExt;
 use iced::futures::channel::mpsc;
-use iced::widget::{button, column, text, text_input};
-use iced::{Element, Subscription, Task};
+use iced::widget::{
+    button, column, container, row, scrollable, text, text_input,
+    scrollable::Scrollbar,
+};
+use iced::{Element, Length, Padding, Subscription, Task};
 
 use crate::games::one_brain::protocol::{ChatItem, ClientMessage, ServerMessage};
+use crate::games::one_brain::styles;
 use crate::games::one_brain::ws::{self, WsCommand, WsConfig};
 
 #[derive(Debug, Clone)]
@@ -25,6 +29,8 @@ pub struct Brain {
     error: Option<String>,
     connection_request: Option<WsConfig>,
     ws_sender: Option<mpsc::Sender<WsCommand>>,
+    last_submitted_word: Option<String>,
+    round_summaries: Vec<RoundSummary>,
 }
 
 impl Default for Brain {
@@ -47,6 +53,8 @@ impl Default for Brain {
             error: None,
             connection_request: None,
             ws_sender: None,
+            last_submitted_word: None,
+            round_summaries: Vec::new(),
         }
     }
 }
@@ -58,15 +66,57 @@ pub struct ChatLine {
     pub timestamp: f64,
 }
 
+#[derive(Debug, Clone)]
+struct RoundSummary {
+    round: u32,
+    is_match: bool,
+    words: Vec<(String, String)>,
+}
+
 impl Brain {
     pub fn view(&self) -> Element<'_, BrainMessage> {
-        match &self.state {
-            BrainState::Menu => self.menu_view(),
-            BrainState::SelectRoom => self.join_form_view(),
-            BrainState::Connecting => self.connecting_view(),
-            BrainState::InRoom => self.room_view(false),
-            BrainState::FinishedGame => self.room_view(true),
-        }
+        let stage = match self.state {
+            BrainState::Menu => self.menu_stage_view(),
+            BrainState::SelectRoom => self.join_form_stage_view(),
+            BrainState::Connecting => self.connecting_stage_view(),
+            BrainState::InRoom => self.room_stage_view(false),
+            BrainState::FinishedGame => self.room_stage_view(true),
+        };
+
+        let layout = row![
+            container(
+                row![
+                    container(self.sidebar_view())
+                        .width(240)
+                        .height(Length::Fill)
+                        .padding(20)
+                        .style(styles::sidebar_panel),
+                    container(stage)
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .padding(22)
+                        .style(styles::stage_panel),
+                ]
+                .spacing(16)
+                .height(Length::Fill)
+            )
+            .width(Length::FillPortion(2))
+            .height(Length::Fill),
+            container(self.chat_panel_view())
+                .width(Length::FillPortion(1))
+                .height(Length::Fill)
+                .padding(20)
+                .style(styles::chat_panel),
+        ]
+        .spacing(16)
+        .height(Length::Fill);
+
+        container(layout)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(16)
+            .style(styles::screen_shell)
+            .into()
     }
 
     pub fn update(&mut self, msg: BrainMessage) -> Task<BrainMessage> {
@@ -154,22 +204,22 @@ impl Brain {
                 Task::none()
             }
             BrainMessage::SendWord => {
-                let word = self.word_input.trim();
+                let word = self.word_input.trim().to_string();
                 if word.is_empty() {
                     self.error = Some(String::from("Введите слово перед отправкой."));
                     return Task::none();
                 }
 
                 self.error = None;
-                let task = self.send_ws_command(WsCommand::Send(ClientMessage::SubmitWord {
-                    word: word.to_string(),
-                }));
+                self.last_submitted_word = Some(word.clone());
+                let task =
+                    self.send_ws_command(WsCommand::Send(ClientMessage::SubmitWord { word }));
                 self.word_input.clear();
 
                 task
             }
             BrainMessage::SendChat => {
-                let message = self.chat_input.trim();
+                let message = self.chat_input.trim().to_string();
                 if message.is_empty() {
                     self.error = Some(String::from("Введите сообщение для чата."));
                     return Task::none();
@@ -177,7 +227,7 @@ impl Brain {
 
                 self.error = None;
                 let task = self.send_ws_command(WsCommand::Send(ClientMessage::ChatMessage {
-                    text: message.to_string(),
+                    text: message,
                 }));
                 self.chat_input.clear();
 
@@ -201,114 +251,485 @@ impl Brain {
         }
     }
 
-    fn menu_view(&self) -> Element<'_, BrainMessage> {
-        column![
-            button("Зайти в игру").on_press(BrainMessage::OpenJoinForm),
-            button("Посмотреть список комнат"),
-            button("Назад").on_press(BrainMessage::GoHome),
+    fn sidebar_view(&self) -> Element<'_, BrainMessage> {
+        let mut primary_button = button(text("Открыть комнату").size(15))
+            .width(Length::Fill)
+            .padding(Padding::from([12, 16]))
+            .style(styles::primary_button);
+
+        if !matches!(self.state, BrainState::Connecting) {
+            primary_button = primary_button.on_press(BrainMessage::OpenJoinForm);
+        }
+
+        let mut leave_button = button(text("Покинуть комнату").size(15))
+            .width(Length::Fill)
+            .padding(Padding::from([12, 16]))
+            .style(styles::danger_button);
+
+        if self.is_live_state() {
+            leave_button = leave_button.on_press(BrainMessage::LeaveRoom);
+        }
+
+        let status_card = container(
+            column![
+                text("Состояние").size(13),
+                text(self.state_title()).size(24),
+                text(self.state_subtitle()).size(14),
+            ]
+            .spacing(8),
+        )
+        .padding(Padding::from([16, 18]))
+        .width(Length::Fill)
+        .style(styles::accent_card);
+
+        let mut column = column![
+            text("ONE BRAIN").size(30),
+            text("Два игрока, одна мысль, один экран контроля.").size(14),
+            status_card,
+            primary_button,
+            leave_button,
+            button(text("Назад").size(15))
+                .width(Length::Fill)
+                .padding(Padding::from([12, 16]))
+                .style(styles::secondary_button)
+                .on_press(BrainMessage::GoHome),
+            button(text("Список комнат").size(15))
+                .width(Length::Fill)
+                .padding(Padding::from([12, 16]))
+                .style(styles::secondary_button),
         ]
-        .spacing(10)
+        .spacing(12);
+
+        if let Some(error) = &self.error {
+            column = column.push(
+                container(
+                    column![text("Ошибка").size(13), text(error).size(14)].spacing(6),
+                )
+                .padding(Padding::from([12, 14]))
+                .width(Length::Fill)
+                .style(styles::system_bubble),
+            );
+        }
+
+        column.into()
+    }
+
+    fn menu_stage_view(&self) -> Element<'_, BrainMessage> {
+        column![
+            self.stage_header_view(
+                "Синхронизация мыслей",
+                "Слева управление комнатой, справа чат, а центральная зона отведена под сам раунд и историю ваших слов."
+            )
+        ]
+        .spacing(18)
+        .height(Length::Fill)
         .into()
     }
 
-    fn join_form_view(&self) -> Element<'_, BrainMessage> {
-        let mut content = column![
-            text("Подключение к комнате"),
-            text(format!("Сервер: {}", self.server_url)),
-            text_input("Введите room id", &self.room_id_input)
-                .on_input(BrainMessage::RoomIdChanged),
-            text_input("Введите имя игрока", &self.name_input)
-                .on_input(BrainMessage::NameChanged),
-            button("Войти").on_press(BrainMessage::ConnectPressed),
-            button("Назад").on_press(BrainMessage::GoHome),
+    fn join_form_stage_view(&self) -> Element<'_, BrainMessage> {
+        let connect_button = button("Подключиться")
+            .padding(16)
+            .width(Length::Fill)
+            .style(styles::primary_button)
+            .on_press(BrainMessage::ConnectPressed);
+
+        column![
+            self.stage_header_view(
+                "Подключение к комнате",
+                "Соберите пару параметров и откройте сессию. После этого центральная панель переключится в боевой режим."
+            ),
+            container(
+                column![
+                    text("Форма входа").size(24),
+                    text_input("room id", &self.room_id_input)
+                        .on_input(BrainMessage::RoomIdChanged)
+                        .style(styles::warm_input)
+                        .padding(14)
+                        .size(18),
+                    text_input("имя игрока", &self.name_input)
+                        .on_input(BrainMessage::NameChanged)
+                        .style(styles::game_input)
+                        .padding(14)
+                        .size(18),
+                    connect_button,
+                ]
+                .spacing(14),
+            )
+            .padding(24)
+            .width(Length::Fill)
+            .style(styles::card),
+            row![
+                self.feature_card("Подсказка", "Название комнаты должно совпасть у обоих игроков."),
+                self.feature_card("Лайв-чат", "После входа чат активируется в правой колонке."),
+            ]
+            .spacing(14),
         ]
-        .spacing(10);
-
-        if let Some(error) = &self.error {
-            content = content.push(text(format!("Ошибка: {}", error)));
-        }
-
-        content.into()
+        .spacing(18)
+        .into()
     }
 
-    fn connecting_view(&self) -> Element<'_, BrainMessage> {
-        let mut content = column![
-            text("Подключение к серверу"),
-            text(format!("Сервер: {}", self.server_url)),
-            text(format!("Комната: {}", self.room_id_input)),
-            text(format!("Игрок: {}", self.name_input)),
-            button("Отмена").on_press(BrainMessage::LeaveRoom),
+    fn connecting_stage_view(&self) -> Element<'_, BrainMessage> {
+        column![
+            self.stage_header_view(
+                "Соединение на линии",
+                "Клиент уже открыл канал и ждёт подтверждение от сервера."
+            ),
+            row![
+                self.stat_card("Сервер", &self.server_url),
+                self.stat_card("Комната", &self.room_id_input),
+                self.stat_card("Игрок", &self.name_input),
+            ]
+            .spacing(14),
+            container(
+                column![
+                    text("Ожидание joined / room_state").size(22),
+                    text("Как только сервер пришлёт joined, центральная сцена переключится на карточки раунда и журнал слов.")
+                        .size(16),
+                ]
+                .spacing(10),
+            )
+            .padding(24)
+            .width(Length::Fill)
+            .style(styles::accent_card),
         ]
-        .spacing(10);
-
-        if let Some(error) = &self.error {
-            content = content.push(text(format!("Ошибка: {}", error)));
-        }
-
-        content.into()
+        .spacing(18)
+        .into()
     }
 
-    fn room_view(&self, is_finished: bool) -> Element<'_, BrainMessage> {
-        let room_id = self
-            .current_room_id
-            .as_deref()
-            .unwrap_or("room is not selected");
-        let player_name = self
-            .current_player_name
-            .as_deref()
-            .unwrap_or("player is not selected");
-        let players_text = if self.players.is_empty() {
-            String::from("Пока в комнате никого нет.")
+    fn room_stage_view(&self, is_finished: bool) -> Element<'_, BrainMessage> {
+        let status = if is_finished || self.finished {
+            "Финал"
         } else {
-            self.players.join(", ")
+            "Активный раунд"
         };
 
-        let chat_column = if self.chat.is_empty() {
-            column![text("Чат пока пуст.")]
+        let mut send_word_button = button(text("Отправить слово").size(15))
+            .padding(Padding::from([12, 18]))
+            .style(styles::primary_button);
+
+        if !is_finished {
+            send_word_button = send_word_button.on_press(BrainMessage::SendWord);
+        }
+
+        let player_list = if self.players.is_empty() {
+            column![text("Игроки появятся после room_state.").size(14)]
         } else {
-            self.chat.iter().fold(column![], |column, line| {
-                column.push(text(format!("{}: {}", line.sender_name, line.text)))
+            self.players.iter().fold(column![], |column, player| {
+                column.push(text(format!("• {}", player)).size(14))
             })
         };
 
-        let mut content = column![
-            text(format!("Комната: {}", room_id)),
-            text(format!("Игрок: {}", player_name)),
-            text(format!("Игроки: {}", players_text)),
-            text(format!(
-                "Готовность: {}/{}",
-                self.ready_count, self.total_players
-            )),
-            text(format!("Раунд: {}", self.round)),
-            text(if is_finished || self.finished {
-                "Игра завершена"
-            } else {
-                "Игра активна"
-            }),
-            text_input("Введите слово", &self.word_input).on_input(BrainMessage::WordInputChanged),
-            button("Отправить слово").on_press(BrainMessage::SendWord),
-            text_input("Сообщение в чат", &self.chat_input)
-                .on_input(BrainMessage::ChatInputChanged),
-            button("Отправить сообщение").on_press(BrainMessage::SendChat),
-            text("Чат"),
-            chat_column,
-            button("Покинуть комнату").on_press(BrainMessage::LeaveRoom),
+        column![
+            self.stage_header_view(
+                "Игровая сцена",
+                "Центральная панель показывает текущий ввод, последнее отправленное слово и историю совпадений по раундам."
+            ),
+            row![
+                self.stat_card(
+                    "Комната",
+                    self.current_room_id
+                        .as_deref()
+                        .unwrap_or(self.room_id_input.as_str()),
+                ),
+                self.stat_card(
+                    "Игрок",
+                    self.current_player_name
+                        .as_deref()
+                        .unwrap_or(self.name_input.as_str()),
+                ),
+                self.stat_card("Раунд", &self.round.to_string()),
+                self.stat_card("Статус", status),
+            ]
+            .spacing(14),
+            row![
+                container(
+                    column![
+                        text("Пульт слова").size(22),
+                        text_input("Введите слово", &self.word_input)
+                            .on_input(BrainMessage::WordInputChanged)
+                            .on_submit(BrainMessage::SendWord)
+                            .style(styles::game_input)
+                            .padding(Padding::from([14, 16]))
+                            .size(18),
+                        row![
+                            self.word_info_card(
+                                "Черновик",
+                                if self.word_input.is_empty() {
+                                    "Пока пусто"
+                                } else {
+                                    self.word_input.as_str()
+                                },
+                            ),
+                            self.word_info_card(
+                                "Последняя отправка",
+                                self.last_submitted_word
+                                    .as_deref()
+                                    .unwrap_or("Ещё не отправлялось"),
+                            ),
+                        ]
+                        .spacing(12),
+                        send_word_button,
+                    ]
+                    .spacing(14),
+                )
+                .padding(Padding::from([18, 20]))
+                .width(Length::FillPortion(2))
+                .style(styles::accent_card),
+                container(
+                    column![
+                        text("Ритм комнаты").size(22),
+                        text(format!("Готовность: {}/{}", self.ready_count, self.total_players))
+                            .size(15),
+                        text(if self.finished {
+                            "Оба игрока уже сошлись."
+                        } else if self.ready_count > 0 {
+                            "Кто-то уже отправил слово."
+                        } else {
+                            "Раунд ещё не начинался."
+                        })
+                        .size(15),
+                        text("Игроки").size(16),
+                        player_list,
+                    ]
+                    .spacing(10),
+                )
+                .padding(Padding::from([18, 20]))
+                .width(Length::FillPortion(1))
+                .style(styles::card),
+            ]
+            .spacing(14),
+            container(
+                column![
+                    text("Журнал введённых слов").size(22),
+                    self.round_history_view(),
+                ]
+                .spacing(12),
+            )
+            .padding(Padding::from([18, 20]))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(styles::card),
         ]
-        .spacing(10);
-
-        if let Some(error) = &self.error {
-            content = content.push(text(format!("Ошибка: {}", error)));
-        }
-
-        content.into()
+        .spacing(16)
+        .height(Length::Fill)
+        .into()
     }
 
-    fn push_system_message(&mut self, text: String) {
-        self.chat.push(ChatLine {
-            sender_name: String::from("System"),
-            text,
-            timestamp: 0.0,
-        });
+    fn chat_panel_view(&self) -> Element<'_, BrainMessage> {
+        let messages = if self.chat.is_empty() {
+            column![
+                container(
+                    column![
+                        text("Чат спит").size(18),
+                        text("После входа сюда будут приходить системные сообщения и реплики игроков.")
+                            .size(14),
+                    ]
+                    .spacing(6),
+                )
+                .padding(Padding::from([14, 16]))
+                .width(Length::Fill)
+                .style(styles::system_bubble)
+            ]
+        } else {
+            self.chat.iter().fold(column![], |column, line| {
+                column.push(self.chat_bubble_view(line))
+            })
+        };
+
+        let scroll = scrollable(
+            container(messages.spacing(10))
+                .padding(Padding { right: 6.0, ..Padding::ZERO }),
+        )
+        .direction(
+            scrollable::Direction::Vertical(
+                Scrollbar::new().width(8).margin(2).scroller_width(8),
+            ),
+        )
+        .style(styles::panel_scrollable)
+        .height(Length::Fill);
+
+        let mut send_button = button(text("Отправить").size(15))
+            .padding(Padding::from([12, 16]))
+            .width(Length::Fill)
+            .style(styles::secondary_button);
+
+        if matches!(self.state, BrainState::InRoom | BrainState::FinishedGame) {
+            send_button = send_button.on_press(BrainMessage::SendChat);
+        }
+
+        column![
+            text("Чат комнаты").size(26),
+            text("Правая колонка остаётся отдельной, чтобы разговор не забивал игровую сцену.")
+                .size(14),
+            scroll,
+            text_input("Сообщение в чат", &self.chat_input)
+                .on_input(BrainMessage::ChatInputChanged)
+                .on_submit(BrainMessage::SendChat)
+                .style(styles::warm_input)
+                .padding(Padding::from([12, 14]))
+                .size(16),
+            send_button,
+        ]
+        .spacing(12)
+        .height(Length::Fill)
+        .into()
+    }
+
+    fn stage_header_view<'a>(&self, title: &'a str, subtitle: &'a str) -> Element<'a, BrainMessage> {
+        container(
+            column![text(title).size(28), text(subtitle).size(15)].spacing(10),
+        )
+        .padding(Padding::from([20, 22]))
+        .width(Length::Fill)
+        .style(styles::accent_card)
+        .into()
+    }
+
+    fn feature_card<'a>(&self, title: &'a str, body: &'a str) -> Element<'a, BrainMessage> {
+        container(column![text(title).size(18), text(body).size(14)].spacing(8))
+            .padding(Padding::from([16, 18]))
+            .width(Length::FillPortion(1))
+            .style(styles::card)
+            .into()
+    }
+
+    fn stat_card(
+        &self,
+        title: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Element<'_, BrainMessage> {
+        let title = title.into();
+        let value = value.into();
+
+        container(column![text(title).size(13), text(value).size(18)].spacing(6))
+            .padding(Padding::from([14, 16]))
+            .width(Length::FillPortion(1))
+            .style(styles::card)
+            .into()
+    }
+
+    fn word_info_card(
+        &self,
+        title: impl Into<String>,
+        value: impl Into<String>,
+    ) -> Element<'_, BrainMessage> {
+        let title = title.into();
+        let value = value.into();
+
+        container(column![text(title).size(13), text(value).size(17)].spacing(6))
+            .padding(Padding::from([14, 16]))
+            .width(Length::FillPortion(1))
+            .style(styles::word_card)
+            .into()
+    }
+
+    fn round_history_view(&self) -> Element<'_, BrainMessage> {
+        let content = if self.round_summaries.is_empty() {
+            column![
+                container(
+                    column![
+                        text("Пока раунды не завершались.").size(17),
+                        text("Когда сервер пришлёт round_result, здесь появятся карточки с обоими словами.")
+                            .size(14),
+                    ]
+                    .spacing(6),
+                )
+                .padding(Padding::from([16, 18]))
+                .width(Length::Fill)
+                .style(styles::word_card)
+            ]
+        } else {
+            self.round_summaries
+                .iter()
+                .fold(column![], |column, summary| {
+                    let words = if summary.words.is_empty() {
+                        column![text("Слова ещё не зафиксированы.").size(14)]
+                    } else {
+                        summary.words.iter().fold(column![], |column, (player, word)| {
+                            column.push(text(format!("{} -> {}", player, word)).size(14))
+                        })
+                    };
+
+                    column.push(
+                        container(
+                            column![
+                                text(format!("Раунд {}", summary.round)).size(18),
+                                text(if summary.is_match {
+                                    "Совпадение найдено"
+                                } else {
+                                    "Мысли ещё расходятся"
+                                })
+                                .size(14),
+                                words,
+                            ]
+                            .spacing(8),
+                        )
+                        .padding(Padding::from([16, 18]))
+                        .width(Length::Fill)
+                        .style(move |theme| styles::round_card(theme, summary.is_match)),
+                    )
+                })
+        };
+
+        scrollable(
+            container(content.spacing(10))
+                .padding(Padding { right: 6.0, ..Padding::ZERO }),
+        )
+        .direction(
+            scrollable::Direction::Vertical(
+                Scrollbar::new().width(8).margin(2).scroller_width(8),
+            ),
+        )
+        .style(styles::panel_scrollable)
+        .height(Length::Fill)
+        .into()
+    }
+
+    fn chat_bubble_view<'a>(&self, line: &'a ChatLine) -> Element<'a, BrainMessage> {
+        let is_system = line.sender_name.eq_ignore_ascii_case("system");
+
+        container(
+            column![
+                text(line.sender_name.as_str()).size(14),
+                text(line.text.as_str()).size(15),
+            ]
+            .spacing(6),
+        )
+        .padding(Padding::from([12, 14]))
+        .width(Length::Fill)
+        .style(if is_system {
+            styles::system_bubble
+        } else {
+            styles::player_bubble
+        })
+        .into()
+    }
+
+    fn state_title(&self) -> &'static str {
+        match self.state {
+            BrainState::Menu => "Холл",
+            BrainState::SelectRoom => "Форма входа",
+            BrainState::Connecting => "Подключение",
+            BrainState::InRoom => "В комнате",
+            BrainState::FinishedGame => "Финал",
+        }
+    }
+
+    fn state_subtitle(&self) -> &'static str {
+        match self.state {
+            BrainState::Menu => "Экран ожидания перед подключением.",
+            BrainState::SelectRoom => "Подготовьте room id и имя.",
+            BrainState::Connecting => "Канал открыт, ждём подтверждение.",
+            BrainState::InRoom => "Раунд в процессе, можно общаться и отправлять слово.",
+            BrainState::FinishedGame => "Партия завершена, история сохранена ниже.",
+        }
+    }
+
+    fn is_live_state(&self) -> bool {
+        matches!(
+            self.state,
+            BrainState::Connecting | BrainState::InRoom | BrainState::FinishedGame
+        )
     }
 
     fn clear_live_room_state(&mut self) {
@@ -322,6 +743,8 @@ impl Brain {
         self.total_players = 2;
         self.round = 1;
         self.finished = false;
+        self.last_submitted_word = None;
+        self.round_summaries.clear();
     }
 
     fn send_ws_command(&mut self, command: WsCommand) -> Task<BrainMessage> {
@@ -394,12 +817,26 @@ impl Brain {
                 words,
                 is_match,
             } => {
+                let mut words: Vec<(String, String)> = words.into_iter().collect();
+                words.sort_by(|left, right| left.0.cmp(&right.0));
+
+                self.round_summaries.push(RoundSummary {
+                    round,
+                    is_match,
+                    words: words.clone(),
+                });
+                self.last_submitted_word = None;
+
                 let result = if is_match {
-                    format!("Раунд {} завершён успешно: {:?}", round, words)
+                    format!("Раунд {} завершён совпадением.", round)
                 } else {
-                    format!("Раунд {} завершён без совпадения: {:?}", round, words)
+                    format!("Раунд {} завершён без совпадения.", round)
                 };
-                self.push_system_message(result);
+                self.chat.push(ChatLine {
+                    sender_name: String::from("System"),
+                    text: result,
+                    timestamp: 0.0,
+                });
             }
             ServerMessage::GameOver {
                 room_id: _,
@@ -410,7 +847,11 @@ impl Brain {
                 self.round = round;
                 self.finished = true;
                 self.state = BrainState::FinishedGame;
-                self.push_system_message(format!("Игра завершена. Общее слово: {}", word));
+                self.chat.push(ChatLine {
+                    sender_name: String::from("System"),
+                    text: format!("Игра завершена. Общее слово: {}", word),
+                    timestamp: 0.0,
+                });
             }
             ServerMessage::Left => {
                 self.connection_request = None;

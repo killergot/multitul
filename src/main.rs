@@ -67,7 +67,12 @@ impl App {
         }
     }
 
-    fn subscription(_app: &Self) -> Subscription<Message> {
+    fn subscription(app: &Self) -> Subscription<Message> {
+        let brain_sub = match &app.screen {
+            Screen::Brain(brain) => brain.subscription().map(Message::Brain),
+            _ => Subscription::none(),
+        };
+
         Subscription::batch([
             event::listen_with(|event, _status, _window| match event {
                 Event::Keyboard(keyboard::Event::KeyPressed { key, text, .. }) => match key.as_ref() {
@@ -80,6 +85,7 @@ impl App {
                 _ => None,
             }),
             every(Duration::from_secs(1)).map(|_| Message::NetworkTick),
+            brain_sub
         ])
     }
 
@@ -135,9 +141,10 @@ impl App {
                 }
                 msg =>{
                     if let Screen::Brain(brain) = &mut app.screen {
-                        brain.update(msg);
+                        brain.update(msg).map(Message::Brain)
+                    } else {
+                        Task::none()
                     }
-                    Task::none()
                 }
             }
             Message::SwitchTo(msg) => {

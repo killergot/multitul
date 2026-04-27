@@ -36,6 +36,114 @@
         radial-gradient(circle at top right, rgba(117, 210, 127, 0.12), transparent 24%),
         linear-gradient(180deg, #111922 0%, #0a1016 100%);
       color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 18%, rgba(255, 205, 112, 0.11), transparent 16%),
+        radial-gradient(circle at 86% 20%, rgba(255, 127, 127, 0.08), transparent 18%),
+        radial-gradient(circle at 48% 82%, rgba(107, 211, 255, 0.08), transparent 24%);
+      pointer-events: none;
+      z-index: 0;
+      animation: skyPulse 16s ease-in-out infinite;
+    }
+
+    .decor-stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .floaty {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      user-select: none;
+      filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.28));
+      opacity: 0.9;
+    }
+
+    .floaty span {
+      display: inline-block;
+      transform-origin: center;
+    }
+
+    .floaty.flower {
+      font-size: clamp(28px, 4vw, 56px);
+      animation: petalDrift linear infinite;
+    }
+
+    .floaty.cat {
+      font-size: clamp(34px, 5vw, 72px);
+      animation: mascotBob ease-in-out infinite;
+    }
+
+    .floaty.dog {
+      font-size: clamp(34px, 5vw, 78px);
+      animation: mascotCruise linear infinite;
+    }
+
+    .flower-a {
+      left: 4%;
+      top: 14%;
+      animation-duration: 18s;
+      animation-delay: -6s;
+    }
+
+    .flower-b {
+      left: 88%;
+      top: 22%;
+      animation-duration: 20s;
+      animation-delay: -11s;
+    }
+
+    .flower-c {
+      left: 10%;
+      top: 72%;
+      animation-duration: 22s;
+      animation-delay: -4s;
+    }
+
+    .flower-d {
+      left: 82%;
+      top: 78%;
+      animation-duration: 24s;
+      animation-delay: -15s;
+    }
+
+    .cat-a {
+      left: 3%;
+      top: 52%;
+      animation-duration: 9s;
+      animation-delay: -2s;
+    }
+
+    .cat-b {
+      left: 84%;
+      top: 58%;
+      animation-duration: 11s;
+      animation-delay: -7s;
+    }
+
+    .dog-a {
+      left: -10%;
+      bottom: 4%;
+      animation-duration: 24s;
+      animation-delay: -8s;
+    }
+
+    .dog-b {
+      left: -20%;
+      bottom: 13%;
+      animation-duration: 29s;
+      animation-delay: -16s;
+      opacity: 0.7;
     }
 
     .shell {
@@ -43,6 +151,8 @@
       margin: 24px auto;
       display: grid;
       gap: 18px;
+      position: relative;
+      z-index: 1;
     }
 
     .hero,
@@ -62,6 +172,11 @@
       gap: 24px;
     }
 
+    .hero-copy {
+      display: grid;
+      gap: 14px;
+    }
+
     .hero h1 {
       margin: 0 0 8px;
       font-size: clamp(28px, 4vw, 42px);
@@ -74,6 +189,38 @@
       max-width: 720px;
       color: var(--muted);
       line-height: 1.5;
+    }
+
+    .mascot-parade {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mascot-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+      color: #f7fbff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .mascot-chip .icon {
+      font-size: 18px;
+      animation: iconBounce 2.8s ease-in-out infinite;
+    }
+
+    .mascot-chip:nth-child(2) .icon {
+      animation-delay: -0.9s;
+    }
+
+    .mascot-chip:nth-child(3) .icon {
+      animation-delay: -1.8s;
     }
 
     .hero-actions {
@@ -340,6 +487,65 @@
       background: rgba(255, 255, 255, 0.02);
     }
 
+    @keyframes petalDrift {
+      0% {
+        transform: translate3d(0, 0, 0) rotate(0deg) scale(0.96);
+      }
+      50% {
+        transform: translate3d(18px, -16px, 0) rotate(14deg) scale(1.04);
+      }
+      100% {
+        transform: translate3d(-10px, 20px, 0) rotate(-12deg) scale(0.98);
+      }
+    }
+
+    @keyframes mascotBob {
+      0%, 100% {
+        transform: translate3d(0, 0, 0) rotate(-4deg);
+      }
+      50% {
+        transform: translate3d(0, -14px, 0) rotate(4deg);
+      }
+    }
+
+    @keyframes mascotCruise {
+      0% {
+        transform: translate3d(0, 0, 0);
+      }
+      100% {
+        transform: translate3d(130vw, 0, 0);
+      }
+    }
+
+    @keyframes iconBounce {
+      0%, 100% {
+        transform: translateY(0) rotate(-6deg);
+      }
+      50% {
+        transform: translateY(-4px) rotate(6deg);
+      }
+    }
+
+    @keyframes skyPulse {
+      0%, 100% {
+        opacity: 0.95;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.03);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
     @media (max-width: 1100px) {
       .stats,
       .grid {
@@ -352,6 +558,12 @@
 
       .room-list {
         max-height: none;
+      }
+
+      .cat-b,
+      .flower-d,
+      .dog-b {
+        display: none;
       }
     }
 
@@ -373,15 +585,42 @@
       .room-header {
         flex-direction: column;
       }
+
+      .decor-stage {
+        opacity: 0.72;
+      }
+
+      .cat-a,
+      .flower-c {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="decor-stage" aria-hidden="true">
+    <div class="floaty flower flower-a"><span>🌼</span></div>
+    <div class="floaty flower flower-b"><span>🌸</span></div>
+    <div class="floaty flower flower-c"><span>🌺</span></div>
+    <div class="floaty flower flower-d"><span>🌷</span></div>
+    <div class="floaty cat cat-a"><span>🐈</span></div>
+    <div class="floaty cat cat-b"><span>🐱</span></div>
+    <div class="floaty dog dog-a"><span>🐕</span></div>
+    <div class="floaty dog dog-b"><span>🐕</span></div>
+  </div>
+
   <div class="shell">
     <section class="hero">
-      <div>
+      <div class="hero-copy">
+        <div>
         <h1>Association Server Dashboard</h1>
         <p>Живой снимок текущего состояния сервера: комнаты, игроки, сабмиты по раундам, история игры и история чата по каждой комнате.</p>
+        </div>
+        <div class="mascot-parade">
+          <div class="mascot-chip"><span class="icon">🌼</span><span>цветочки</span></div>
+          <div class="mascot-chip"><span class="icon">🐈</span><span>котики</span></div>
+          <div class="mascot-chip"><span class="icon">🐕</span><span>таксы на патруле</span></div>
+        </div>
       </div>
       <div class="hero-actions">
         <span class="stamp" id="lastUpdated">Ожидание данных</span>

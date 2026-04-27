@@ -1,4 +1,5 @@
 use crate::games::wordly::mark::Mark;
+use crate::utils::style::mix;
 use iced::{
     Background, Border, Color, Shadow, Theme, Vector,
     widget::{button, container},
@@ -26,15 +27,6 @@ fn palette_by_mark(mark: Mark) -> (Color, Color) {
             Color::from_rgb(0.12, 0.12, 0.10), // empty cell
             Color::from_rgb(0.22, 0.22, 0.20), // neutral border
         ),
-    }
-}
-
-fn mix(base: Color, accent: Color, amount: f32) -> Color {
-    Color {
-        r: base.r + (accent.r - base.r) * amount,
-        g: base.g + (accent.g - base.g) * amount,
-        b: base.b + (accent.b - base.b) * amount,
-        a: base.a + (accent.a - base.a) * amount,
     }
 }
 

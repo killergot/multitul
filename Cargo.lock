@@ -2832,6 +2832,7 @@ dependencies = [
  "log",
  "ping-rs",
  "rand",
+ "serde_json",
  "time",
  "unicode-segmentation",
 ]

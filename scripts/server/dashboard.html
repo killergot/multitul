@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e141b;
+      --bg-soft: #16202b;
+      --panel: rgba(22, 32, 43, 0.92);
+      --panel-strong: rgba(14, 20, 27, 0.96);
+      --border: rgba(168, 191, 214, 0.16);
+      --text: #e8f0f7;
+      --muted: #98a9ba;
+      --accent: #6bd3ff;
+      --accent-strong: #2fa4d8;
+      --success: #75d27f;
+      --warn: #ffcd70;
+      --danger: #ff7f7f;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Inter", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(107, 211, 255, 0.14), transparent 30%),
+        radial-gradient(circle at top right, rgba(117, 210, 127, 0.12), transparent 24%),
+        linear-gradient(180deg, #111922 0%, #0a1016 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      width: min(1400px, calc(100vw - 32px));
+      margin: 24px auto;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero,
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero {
+      border-radius: 28px;
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #04141c;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .stamp {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border-radius: var(--radius);
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+      border: 1px solid var(--border);
+    }
+
+    .card .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .card .value {
+      font-size: clamp(28px, 3vw, 40px);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 18px;
+      min-height: 70vh;
+    }
+
+    .panel {
+      border-radius: 26px;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-strong);
+    }
+
+    .panel-head h2,
+    .panel-head h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .room-list {
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      max-height: calc(70vh - 76px);
+      overflow: auto;
+    }
+
+    .room-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .room-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(107, 211, 255, 0.32);
+    }
+
+    .room-item.active {
+      background: linear-gradient(180deg, rgba(107, 211, 255, 0.18), rgba(107, 211, 255, 0.05));
+      border-color: rgba(107, 211, 255, 0.36);
+    }
+
+    .room-item strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .room-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .badge.success {
+      color: var(--success);
+      border-color: rgba(117, 210, 127, 0.28);
+    }
+
+    .badge.warn {
+      color: var(--warn);
+      border-color: rgba(255, 205, 112, 0.28);
+    }
+
+    .badge.danger {
+      color: var(--danger);
+      border-color: rgba(255, 127, 127, 0.28);
+    }
+
+    .detail-shell {
+      padding: 18px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .room-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 4px 2px;
+    }
+
+    .room-header h2 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .room-header p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .section {
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.03);
+      overflow: hidden;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .section-body {
+      padding: 14px 18px 18px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      border-radius: 16px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .list-item strong {
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .history-item {
+      display: grid;
+      gap: 8px;
+    }
+
+    .history-item code {
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .chat-item {
+      display: grid;
+      gap: 6px;
+    }
+
+    .chat-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .chat-text {
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+
+    .empty {
+      padding: 28px 20px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--border);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    @media (max-width: 1100px) {
+      .stats,
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .room-list {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100vw - 20px, 1400px);
+        margin: 10px auto 24px;
+      }
+
+      .hero {
+        flex-direction: column;
+      }
+
+      .stats,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .room-header {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div>
+        <h1>Association Server Dashboard</h1>
+        <p>Живой снимок текущего состояния сервера: комнаты, игроки, сабмиты по раундам, история игры и история чата по каждой комнате.</p>
+      </div>
+      <div class="hero-actions">
+        <span class="stamp" id="lastUpdated">Ожидание данных</span>
+        <button class="button" id="refreshButton" type="button">Обновить</button>
+      </div>
+    </section>
+
+    <section class="stats" id="stats"></section>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Комнаты</h2>
+          <span class="badge" id="roomCountBadge">0 активных</span>
+        </div>
+        <div class="room-list" id="roomList"></div>
+      </aside>
+
+      <main class="panel">
+        <div class="panel-head">
+          <h2>Детали комнаты</h2>
+          <span class="badge" id="selectionBadge">Ничего не выбрано</span>
+        </div>
+        <div class="detail-shell" id="roomDetails"></div>
+      </main>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      snapshot: null,
+      selectedRoomId: null,
+      pollTimer: null,
+    };
+
+    const statsEl = document.getElementById("stats");
+    const roomListEl = document.getElementById("roomList");
+    const roomDetailsEl = document.getElementById("roomDetails");
+    const roomCountBadgeEl = document.getElementById("roomCountBadge");
+    const selectionBadgeEl = document.getElementById("selectionBadge");
+    const lastUpdatedEl = document.getElementById("lastUpdated");
+    const refreshButton = document.getElementById("refreshButton");
+
+    function formatTime(ts) {
+      if (!ts) {
+        return "—";
+      }
+
+      return new Date(ts * 1000).toLocaleString("ru-RU", {
+        hour12: false,
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function badgeClass(kind) {
+      if (kind === "success") return "badge success";
+      if (kind === "warn") return "badge warn";
+      if (kind === "danger") return "badge danger";
+      return "badge";
+    }
+
+    function renderStats(snapshot) {
+      const items = [
+        { label: "Активные комнаты", value: snapshot.summary.room_count },
+        { label: "Игроки онлайн", value: snapshot.summary.player_count },
+        { label: "Завершённые игры", value: snapshot.summary.finished_room_count },
+        { label: "Сообщения в чатах", value: snapshot.summary.chat_message_count },
+      ];
+
+      statsEl.innerHTML = items.map((item) => `
+        <article class="card">
+          <div class="label">${escapeHtml(item.label)}</div>
+          <div class="value">${escapeHtml(item.value)}</div>
+        </article>
+      `).join("");
+    }
+
+    function ensureSelection(rooms) {
+      if (!rooms.length) {
+        state.selectedRoomId = null;
+        return;
+      }
+
+      const exists = rooms.some((room) => room.id === state.selectedRoomId);
+      if (!exists) {
+        state.selectedRoomId = rooms[0].id;
+      }
+    }
+
+    function renderRoomList(snapshot) {
+      const rooms = snapshot.rooms;
+      roomCountBadgeEl.textContent = `${rooms.length} активных`;
+      ensureSelection(rooms);
+
+      if (!rooms.length) {
+        roomListEl.innerHTML = `<div class="empty">Сейчас нет активных комнат.</div>`;
+        return;
+      }
+
+      roomListEl.innerHTML = rooms.map((room) => {
+        const statusClass = room.finished ? "success" : (room.player_count === room.max_players ? "warn" : "");
+        const statusText = room.finished ? "Завершена" : (room.player_count === room.max_players ? "Полная" : "Ожидает");
+
+        return `
+          <button class="room-item ${room.id === state.selectedRoomId ? "active" : ""}" data-room-id="${escapeHtml(room.id)}" type="button">
+            <strong>${escapeHtml(room.id)}</strong>
+            <div class="room-meta">
+              <span class="${badgeClass(statusClass)}">${escapeHtml(statusText)}</span>
+              <span class="badge">Игроков: ${escapeHtml(room.player_count)}/${escapeHtml(room.max_players)}</span>
+              <span class="badge">Раунд ${escapeHtml(room.round_number)}</span>
+            </div>
+          </button>
+        `;
+      }).join("");
+
+      for (const button of roomListEl.querySelectorAll("[data-room-id]")) {
+        button.addEventListener("click", () => {
+          state.selectedRoomId = button.getAttribute("data-room-id");
+          render();
+        });
+      }
+    }
+
+    function renderList(items, emptyText, renderItem) {
+      if (!items.length) {
+        return `<div class="empty">${escapeHtml(emptyText)}</div>`;
+      }
+
+      return `<div class="list">${items.map(renderItem).join("")}</div>`;
+    }
+
+    function renderRoomDetails(snapshot) {
+      const room = snapshot.rooms.find((item) => item.id === state.selectedRoomId);
+
+      if (!room) {
+        selectionBadgeEl.textContent = "Ничего не выбрано";
+        roomDetailsEl.innerHTML = `<div class="empty">Выберите комнату слева, чтобы посмотреть детали.</div>`;
+        return;
+      }
+
+      selectionBadgeEl.textContent = room.id;
+
+      const statusClass = room.finished ? "success" : (room.player_count === room.max_players ? "warn" : "");
+      const statusText = room.finished ? "Игра завершена" : (room.player_count === room.max_players ? "Все игроки в комнате" : "Комната ожидает игроков");
+
+      roomDetailsEl.innerHTML = `
+        <section class="room-header">
+          <div>
+            <h2>${escapeHtml(room.id)}</h2>
+            <p>Последнее изменение: ${escapeHtml(formatTime(room.last_activity_at))}</p>
+          </div>
+          <div class="room-meta">
+            <span class="${badgeClass(statusClass)}">${escapeHtml(statusText)}</span>
+            <span class="badge">Раунд ${escapeHtml(room.round_number)}</span>
+            <span class="badge">Готовы: ${escapeHtml(room.ready_count)}/${escapeHtml(room.max_players)}</span>
+          </div>
+        </section>
+
+        <section class="grid">
+          <article class="section">
+            <div class="section-head">
+              <h3>Игроки</h3>
+              <span class="badge">${escapeHtml(room.player_count)} в комнате</span>
+            </div>
+            <div class="section-body">
+              ${renderList(room.players, "Игроков пока нет.", (player) => `
+                <div class="list-item">
+                  <strong>${escapeHtml(player.name)}</strong>
+                  <span class="muted">${escapeHtml(player.id)}</span>
+                </div>
+              `)}
+            </div>
+          </article>
+
+          <article class="section">
+            <div class="section-head">
+              <h3>Текущие сабмиты</h3>
+              <span class="badge">${escapeHtml(room.ready_count)} готовы</span>
+            </div>
+            <div class="section-body">
+              ${renderList(room.submissions, "В текущем раунде ещё нет отправленных слов.", (submission) => `
+                <div class="list-item">
+                  <strong>${escapeHtml(submission.player_name)}</strong>
+                  <code>${escapeHtml(submission.word)}</code>
+                </div>
+              `)}
+            </div>
+          </article>
+        </section>
+
+        <section class="grid">
+          <article class="section">
+            <div class="section-head">
+              <h3>История игры</h3>
+              <span class="badge">${escapeHtml(room.history.length)} раундов</span>
+            </div>
+            <div class="section-body">
+              ${renderList(room.history, "История раундов пока пуста.", (entry) => `
+                <div class="list-item history-item">
+                  <div>
+                    <strong>Раунд ${escapeHtml(entry.round)}</strong>
+                    <span class="${badgeClass(entry.match ? "success" : "danger")}">${escapeHtml(entry.match ? "Совпали" : "Не совпали")}</span>
+                  </div>
+                  <div>${Object.entries(entry.words).map(([name, word]) => `<code>${escapeHtml(name)}: ${escapeHtml(word)}</code>`).join(" ") || "<span class='muted'>Нет данных</span>"}</div>
+                </div>
+              `)}
+            </div>
+          </article>
+
+          <article class="section">
+            <div class="section-head">
+              <h3>Чат комнаты</h3>
+              <span class="badge">${escapeHtml(room.chat_history.length)} сообщений</span>
+            </div>
+            <div class="section-body">
+              ${renderList(room.chat_history, "История чата пока пуста.", (message) => `
+                <div class="list-item chat-item">
+                  <div class="chat-meta">
+                    <span>${escapeHtml(message.sender_name)}</span>
+                    <span>${escapeHtml(formatTime(message.timestamp))}</span>
+                  </div>
+                  <div class="chat-text">${escapeHtml(message.text)}</div>
+                </div>
+              `)}
+            </div>
+          </article>
+        </section>
+      `;
+    }
+
+    function render() {
+      const snapshot = state.snapshot;
+      if (!snapshot) {
+        return;
+      }
+
+      renderStats(snapshot);
+      renderRoomList(snapshot);
+      renderRoomDetails(snapshot);
+    }
+
+    async function loadState() {
+      try {
+        const response = await fetch("/api/dashboard/state", {
+          cache: "no-store",
+          headers: { "Accept": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        state.snapshot = await response.json();
+        lastUpdatedEl.textContent = `Обновлено: ${new Date().toLocaleTimeString("ru-RU", { hour12: false })}`;
+        render();
+      } catch (error) {
+        lastUpdatedEl.textContent = `Ошибка обновления: ${error.message}`;
+      }
+    }
+
+    refreshButton.addEventListener("click", loadState);
+    loadState();
+    state.pollTimer = window.setInterval(loadState, 2000);
+  </script>
+</body>
+</html>

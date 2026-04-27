@@ -4,4 +4,5 @@ services:
     container_name: association-game-server
     ports:
       - "8765:8765"
+      - "8080:8080"
     restart: unless-stopped

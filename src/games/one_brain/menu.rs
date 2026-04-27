@@ -18,7 +18,7 @@ impl Brain{
             BrainState::Menu => {
                 column![
                     button("Зайти в игру"),
-                    button("Посмотреть список комант"),
+                    button("Посмотреть список комнат"),
                     button("Назад").on_press(BrainMessage::GoHome)
                 ].spacing(10).into()
             },
@@ -49,4 +49,5 @@ pub enum BrainMessage {
     GoHome,
     SendWord(String),
     SendMessage(String),
+    LeaveRoom
 }

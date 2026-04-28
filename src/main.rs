@@ -46,9 +46,11 @@ fn main() -> iced::Result {
 struct App {
     screen: Screen,
     network: Network,
-    git_state: GitState,
+
+    git_state: Option<GitState>,
     git_edge_cache: Cache,
     git_node_cache: Cache,
+
     bottom_panel_height: f32,
     cursor_y: f32,
     drag_anchor: Option<(f32, f32)>,
@@ -57,24 +59,25 @@ struct App {
 impl App {
     fn new() -> Self {
         let mut provider = GitProvider::new();
-        match provider.scan_repository() {
-            Err(e) => panic!("{}", e),
-            _ => {}
-        }
-
-        let graph = GitGraph::new(&provider.repository.commits);
-        let ordered_nodes = graph.topo_for_layout(&provider.repository);
-        let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
+        let git_state = match provider.scan_repository() {
+            Err(e) => None,
+            _ => {
+                let graph = GitGraph::new(&provider.repository.commits);
+                let ordered_nodes = graph.topo_for_layout(&provider.repository);
+                let layout: GraphLayout = GraphLayout::new(&ordered_nodes);
+                Some(GitState {
+                    graph,
+                    repo: provider.repository.clone(),
+                    layout,
+                })
+            }
+        };
 
         let network = Network::new(None);
 
         Self {
             screen: Screen::Main,
-            git_state: GitState {
-                graph,
-                repo: provider.repository.clone(),
-                layout,
-            },
+            git_state,
             network,
             git_edge_cache: Cache::new(),
             git_node_cache: Cache::new(),
@@ -217,13 +220,16 @@ impl App {
         let bottom_panel = container(
             row![
                 container(
+                    if let Some(git_state) = &self.git_state {
                     scrollable(git_widget(
-                        &self.git_state.layout,
+                        &git_state.layout,
                         &self.git_edge_cache,
                         &self.git_node_cache,
                     ))
                     .width(Length::Fill)
-                    .height(Length::Fill),
+                    .height(Length::Fill)
+                    }
+                    else{ scrollable(text("Ошибка при парсинге гит графа"))}
                 )
                 .width(Length::FillPortion(3))
                 .height(Length::Fill)

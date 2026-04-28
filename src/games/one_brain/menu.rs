@@ -454,14 +454,6 @@ impl Brain {
                             .size(15),
                         row![
                             self.word_info_card(
-                                "Черновик",
-                                if self.word_input.is_empty() {
-                                    "Пока пусто"
-                                } else {
-                                    self.word_input.as_str()
-                                },
-                            ),
-                            self.word_info_card(
                                 "Последняя отправка",
                                 self.last_submitted_word
                                     .as_deref()

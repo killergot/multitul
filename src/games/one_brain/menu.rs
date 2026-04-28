@@ -1,13 +1,17 @@
 use futures::SinkExt;
 use iced::futures::channel::mpsc;
 use iced::widget::{
-    button, column, container, row, scrollable, scrollable::Scrollbar, text, text_input,
+    Id, button, column, container, operation, row, scrollable, scrollable::Scrollbar, text,
+    text_input,
 };
 use iced::{Element, Length, Padding, Subscription, Task};
 
 use crate::games::one_brain::protocol::{ChatItem, ClientMessage, ServerMessage};
 use crate::games::one_brain::styles;
 use crate::games::one_brain::ws::{self, WsCommand, WsConfig};
+
+static CHAT_SCROLLABLE_ID: Id = Id::new("one_brain_chat");
+static ROUND_SCROLLABLE_ID: Id = Id::new("one_brain_rounds");
 
 #[derive(Debug, Clone)]
 pub struct Brain {
@@ -175,10 +179,7 @@ impl Brain {
                 Task::none()
             }
             BrainMessage::WsConnected => Task::none(),
-            BrainMessage::WsEvent(event) => {
-                self.apply_server_message(event);
-                Task::none()
-            }
+            BrainMessage::WsEvent(event) => self.apply_server_message(event),
             BrainMessage::WsClosed => {
                 self.ws_sender = None;
                 if self.connection_request.is_some() {
@@ -532,6 +533,7 @@ impl Brain {
             right: 6.0,
             ..Padding::ZERO
         }))
+        .id(CHAT_SCROLLABLE_ID.clone())
         .direction(scrollable::Direction::Vertical(
             Scrollbar::new().width(8).margin(2).scroller_width(8),
         ))
@@ -712,6 +714,7 @@ impl Brain {
             right: 6.0,
             ..Padding::ZERO
         }))
+        .id(ROUND_SCROLLABLE_ID.clone())
         .direction(scrollable::Direction::Vertical(
             Scrollbar::new().width(8).margin(2).scroller_width(8),
         ))
@@ -797,7 +800,10 @@ impl Brain {
         )
     }
 
-    fn apply_server_message(&mut self, message: ServerMessage) {
+    fn apply_server_message(&mut self, message: ServerMessage) -> Task<BrainMessage> {
+        let mut chat_changed = false;
+        let mut rounds_changed = false;
+
         match message {
             ServerMessage::Joined {
                 player_id: _,
@@ -814,6 +820,7 @@ impl Brain {
                 messages,
             } => {
                 self.chat = messages.into_iter().map(Self::chat_from_item).collect();
+                chat_changed = true;
             }
             ServerMessage::ChatMessage {
                 room_id: _,
@@ -827,6 +834,7 @@ impl Brain {
                     text,
                     timestamp,
                 });
+                chat_changed = true;
             }
             ServerMessage::RoomState {
                 room_id: _,
@@ -872,6 +880,8 @@ impl Brain {
                     text: result,
                     timestamp: 0.0,
                 });
+                chat_changed = true;
+                rounds_changed = true;
             }
             ServerMessage::GameOver {
                 room_id: _,
@@ -887,6 +897,7 @@ impl Brain {
                     text: format!("Игра завершена. Общее слово: {}", word),
                     timestamp: 0.0,
                 });
+                chat_changed = true;
             }
             ServerMessage::Left => {
                 self.connection_request = None;
@@ -899,6 +910,15 @@ impl Brain {
                 self.error = Some(message);
             }
         }
+
+        let mut tasks = Vec::new();
+        if chat_changed {
+            tasks.push(operation::snap_to_end(CHAT_SCROLLABLE_ID.clone()));
+        }
+        if rounds_changed {
+            tasks.push(operation::snap_to_end(ROUND_SCROLLABLE_ID.clone()));
+        }
+        Task::batch(tasks)
     }
 
     fn chat_from_item(item: ChatItem) -> ChatLine {

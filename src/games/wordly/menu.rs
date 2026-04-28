@@ -171,12 +171,18 @@ impl Wordly {
     fn menu_screen<'a>(&'a self, title: &'a str, subtitle: &'a str) -> Element<'a, WordlyMessage> {
         let panel = container(
             column![
-                container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
-                    .style(style::accent_strip),
+                container(
+                    text("")
+                        .width(Length::Fixed(56.0))
+                        .height(Length::Fixed(3.0))
+                )
+                .style(style::accent_strip),
                 text(title).font(DISPLAY_FONT).size(48),
                 text(subtitle)
                     .size(14)
-                    .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+                    .style(|_| iced::widget::text::Style {
+                        color: Some(TEXT_DIM)
+                    }),
                 container(text("")).height(12),
                 wordly_menu_button("01 · Начать партию", WordlyMessage::GoPlay),
                 wordly_menu_button("02 · В главное меню", WordlyMessage::GoHome),
@@ -204,14 +210,19 @@ impl Wordly {
     ) -> Element<'a, WordlyMessage> {
         let panel = container(
             column![
-                container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
-                    .style(style::accent_strip),
+                container(
+                    text("")
+                        .width(Length::Fixed(56.0))
+                        .height(Length::Fixed(3.0))
+                )
+                .style(style::accent_strip),
                 text(title).font(DISPLAY_FONT).size(40),
                 text(subtitle)
                     .size(14)
-                    .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
-                container(attempt_widget(&self.proccess_game.attempts))
-                    .center_x(Length::Fill),
+                    .style(|_| iced::widget::text::Style {
+                        color: Some(TEXT_DIM)
+                    }),
+                container(attempt_widget(&self.proccess_game.attempts)).center_x(Length::Fill),
                 container(text("")).height(8),
                 wordly_menu_button("01 · Снова в бой", WordlyMessage::GoPlay),
                 wordly_menu_button("02 · В главное меню", WordlyMessage::GoHome),

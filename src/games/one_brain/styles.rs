@@ -123,4 +123,3 @@ pub fn warm_input(theme: &Theme, status: text_input::Status) -> text_input::Styl
 pub fn panel_scrollable(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
     style::flat_scrollable(theme, status)
 }
-

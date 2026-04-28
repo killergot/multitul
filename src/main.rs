@@ -3,15 +3,18 @@ mod games;
 mod macros;
 mod utils;
 
-use std::time::Duration;
-use iced::time::every;
 use crate::games::wordly::{Wordly, WordlyMessage};
+use iced::time::every;
+use std::time::Duration;
 
 use iced::alignment::{Horizontal, Vertical};
 use iced::keyboard::Key;
 use iced::keyboard::key::Named;
 use iced::widget::{container, mouse_area, row, scrollable, stack, svg};
-use iced::{Background, Border, Color, Element, Length, Padding, Theme, widget::{button, column, text}, Task};
+use iced::{
+    Background, Border, Color, Element, Length, Padding, Task, Theme,
+    widget::{button, column, text},
+};
 use iced::{Event, Subscription, event, keyboard, mouse};
 
 use crate::utils::style::{
@@ -19,16 +22,16 @@ use crate::utils::style::{
 };
 
 use crate::core::git::widget::git_widget;
+use crate::core::network::network::Network;
+use crate::core::network::state::NetworkState;
 use crate::core::sign::sign_widget;
+use crate::games::one_brain::menu::{Brain, BrainMessage};
 use crate::utils::git::GitGraph;
 use crate::utils::git::GitStorage;
 use crate::utils::git::graph_layout::GraphLayout;
 use crate::utils::git::provider::GitProvider;
 use crate::utils::git::state::GitState;
 use iced::widget::canvas::Cache;
-use crate::core::network::network::Network;
-use crate::core::network::state::NetworkState;
-use crate::games::one_brain::menu::{Brain, BrainMessage};
 
 const SPLITTER_HEIGHT: f32 = 5.0;
 const BOTTOM_PANEL_DEFAULT: f32 = 250.0;
@@ -95,13 +98,19 @@ impl App {
 
         Subscription::batch([
             event::listen_with(|event, _status, _window| match event {
-                Event::Keyboard(keyboard::Event::KeyPressed { key, text, .. }) => match key.as_ref() {
-                    Key::Named(Named::ArrowLeft) => Some(Message::KeyPressed(KeyMessage::Left)),
-                    Key::Named(Named::ArrowRight) => Some(Message::KeyPressed(KeyMessage::Right)),
-                    Key::Named(Named::Backspace) => Some(Message::KeyPressed(KeyMessage::Backspace)),
-                    Key::Named(Named::Enter) => Some(Message::KeyPressed(KeyMessage::Enter)),
-                    _ => text.map(|t| Message::KeyPressed(KeyMessage::Char(t.to_string()))),
-                },
+                Event::Keyboard(keyboard::Event::KeyPressed { key, text, .. }) => {
+                    match key.as_ref() {
+                        Key::Named(Named::ArrowLeft) => Some(Message::KeyPressed(KeyMessage::Left)),
+                        Key::Named(Named::ArrowRight) => {
+                            Some(Message::KeyPressed(KeyMessage::Right))
+                        }
+                        Key::Named(Named::Backspace) => {
+                            Some(Message::KeyPressed(KeyMessage::Backspace))
+                        }
+                        Key::Named(Named::Enter) => Some(Message::KeyPressed(KeyMessage::Enter)),
+                        _ => text.map(|t| Message::KeyPressed(KeyMessage::Char(t.to_string()))),
+                    }
+                }
                 Event::Mouse(mouse::Event::CursorMoved { position }) => {
                     Some(Message::CursorMoved(position.y))
                 }
@@ -111,7 +120,7 @@ impl App {
                 _ => None,
             }),
             every(Duration::from_secs(1)).map(|_| Message::NetworkTick),
-            brain_sub
+            brain_sub,
         ])
     }
 
@@ -129,7 +138,6 @@ impl App {
                     wordly.key_pressed(key_msg);
                 }
                 Task::none()
-
             }
             Message::Counter(msg) => match msg {
                 CounterMessage::Increment => {
@@ -137,14 +145,12 @@ impl App {
                         counter.value += 1;
                     }
                     Task::none()
-
                 }
                 CounterMessage::Decrement => {
                     if let Screen::Counter(counter) = &mut app.screen {
                         counter.value -= 1;
                     }
                     Task::none()
-
                 }
             },
             Message::Wordly(msg) => match msg {
@@ -157,7 +163,6 @@ impl App {
                         wordly.update(msg);
                     }
                     Task::none()
-
                 }
             },
             Message::Brain(msg) => match msg {
@@ -165,14 +170,14 @@ impl App {
                     app.screen = Screen::Main;
                     Task::none()
                 }
-                msg =>{
+                msg => {
                     if let Screen::Brain(brain) = &mut app.screen {
                         brain.update(msg).map(Message::Brain)
                     } else {
                         Task::none()
                     }
                 }
-            }
+            },
             Message::SwitchTo(msg) => {
                 app.screen = msg;
                 Task::none()
@@ -204,9 +209,7 @@ impl App {
             Screen::Main => main_screen(),
         };
 
-        let top_area = container(content)
-            .width(Length::Fill)
-            .height(Length::Fill);
+        let top_area = container(content).width(Length::Fill).height(Length::Fill);
 
         let splitter = mouse_area(
             container(text(""))
@@ -219,8 +222,7 @@ impl App {
 
         let bottom_panel = container(
             row![
-                container(
-                    if let Some(git_state) = &self.git_state {
+                container(if let Some(git_state) = &self.git_state {
                     scrollable(git_widget(
                         &git_state.layout,
                         &self.git_edge_cache,
@@ -228,9 +230,9 @@ impl App {
                     ))
                     .width(Length::Fill)
                     .height(Length::Fill)
-                    }
-                    else{ scrollable(text("Ошибка при парсинге гит графа"))}
-                )
+                } else {
+                    scrollable(text("Ошибка при парсинге гит графа"))
+                })
                 .width(Length::FillPortion(3))
                 .height(Length::Fill)
                 .padding(12),
@@ -254,16 +256,12 @@ impl App {
 
         stack![
             main_column,
-            container(
-                svg(self.network.get_icon().clone())
-                    .width(24)
-                    .height(24)
-            )
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(iced::alignment::Horizontal::Right)
-            .align_y(iced::alignment::Vertical::Top)
-            .padding(20),
+            container(svg(self.network.get_icon().clone()).width(24).height(24))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(iced::alignment::Horizontal::Right)
+                .align_y(iced::alignment::Vertical::Top)
+                .padding(20),
         ]
         .into()
     }
@@ -304,12 +302,18 @@ fn menu_link_button(label: &str, message: Message) -> button::Button<'_, Message
 fn main_screen() -> Element<'static, Message> {
     let panel = container(
         column![
-            container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
-                .style(design::accent_strip),
+            container(
+                text("")
+                    .width(Length::Fixed(56.0))
+                    .height(Length::Fixed(3.0))
+            )
+            .style(design::accent_strip),
             text("MULTITUL").font(DISPLAY_FONT).size(54),
             text("Сборник iced-экспериментов в одном окне")
                 .size(14)
-                .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+                .style(|_| iced::widget::text::Style {
+                    color: Some(TEXT_DIM)
+                }),
             container(text("")).height(12),
             menu_link_button(
                 "01 · Counter",
@@ -343,17 +347,25 @@ fn main_screen() -> Element<'static, Message> {
 fn counter_screen(value: i32) -> Element<'static, Message> {
     let panel = container(
         column![
-            container(text("").width(Length::Fixed(56.0)).height(Length::Fixed(3.0)))
-                .style(design::accent_strip),
+            container(
+                text("")
+                    .width(Length::Fixed(56.0))
+                    .height(Length::Fixed(3.0))
+            )
+            .style(design::accent_strip),
             text("COUNTER").font(DISPLAY_FONT).size(36),
             text("Простейший пример состояния")
                 .size(13)
-                .style(|_| iced::widget::text::Style { color: Some(TEXT_DIM) }),
+                .style(|_| iced::widget::text::Style {
+                    color: Some(TEXT_DIM)
+                }),
             container(text("")).height(8),
             text(format!("{}", value))
                 .font(DISPLAY_FONT)
                 .size(72)
-                .style(|_| iced::widget::text::Style { color: Some(ACCENT) }),
+                .style(|_| iced::widget::text::Style {
+                    color: Some(ACCENT)
+                }),
             container(text("")).height(8),
             row![
                 button(text("−").size(20).center())

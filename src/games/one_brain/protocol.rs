@@ -19,8 +19,15 @@ pub struct ChatItem {
 #[derive(Debug, Clone, serde::Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
-    Joined { player_id: String, room_id: String, name: String },
-    ChatHistory { room_id: String, messages: Vec<ChatItem> },
+    Joined {
+        player_id: String,
+        room_id: String,
+        name: String,
+    },
+    ChatHistory {
+        room_id: String,
+        messages: Vec<ChatItem>,
+    },
     ChatMessage {
         room_id: String,
         sender_id: String,
@@ -51,5 +58,7 @@ pub enum ServerMessage {
     },
     Left,
     Pong,
-    Error { message: String },
+    Error {
+        message: String,
+    },
 }

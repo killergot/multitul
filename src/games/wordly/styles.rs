@@ -107,4 +107,3 @@ pub fn primary_button(theme: &Theme, status: button::Status) -> button::Style {
 pub fn ghost_button(theme: &Theme, status: button::Status) -> button::Style {
     style::ghost_button(theme, status)
 }
-

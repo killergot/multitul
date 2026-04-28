@@ -1,8 +1,7 @@
 use futures::SinkExt;
 use iced::futures::channel::mpsc;
 use iced::widget::{
-    button, column, container, row, scrollable, text, text_input,
-    scrollable::Scrollbar,
+    button, column, container, row, scrollable, scrollable::Scrollbar, text, text_input,
 };
 use iced::{Element, Length, Padding, Subscription, Task};
 
@@ -302,12 +301,10 @@ impl Brain {
 
         if let Some(error) = &self.error {
             column = column.push(
-                container(
-                    column![text("Ошибка").size(13), text(error).size(14)].spacing(6),
-                )
-                .padding(Padding::from([12, 14]))
-                .width(Length::Fill)
-                .style(styles::system_bubble),
+                container(column![text("Ошибка").size(13), text(error).size(14)].spacing(6))
+                    .padding(Padding::from([12, 14]))
+                    .width(Length::Fill)
+                    .style(styles::system_bubble),
             );
         }
 
@@ -359,7 +356,10 @@ impl Brain {
             .width(Length::Fill)
             .style(styles::card),
             row![
-                self.feature_card("Подсказка", "Название комнаты должно совпасть у обоих игроков."),
+                self.feature_card(
+                    "Подсказка",
+                    "Название комнаты должно совпасть у обоих игроков."
+                ),
                 self.feature_card("Лайв-чат", "Чат активируется в правой колонке."),
             ]
             .spacing(10),
@@ -370,10 +370,7 @@ impl Brain {
 
     fn connecting_stage_view(&self) -> Element<'_, BrainMessage> {
         column![
-            self.stage_header_view(
-                "Соединение на линии",
-                "Канал открыт, ждём подтверждение."
-            ),
+            self.stage_header_view("Соединение на линии", "Канал открыт, ждём подтверждение."),
             row![
                 self.stat_card("Сервер", &self.server_url),
                 self.stat_card("Комната", &self.room_id_input),
@@ -385,7 +382,9 @@ impl Brain {
                     text("Ожидание joined / room_state").size(15),
                     text("Как только сервер пришлёт joined — переключим сцену на раунд и журнал.")
                         .size(13)
-                        .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                        .style(|_| iced::widget::text::Style {
+                            color: Some(crate::utils::style::TEXT_DIM)
+                        }),
                 ]
                 .spacing(6),
             )
@@ -529,15 +528,13 @@ impl Brain {
             })
         };
 
-        let scroll = scrollable(
-            container(messages.spacing(10))
-                .padding(Padding { right: 6.0, ..Padding::ZERO }),
-        )
-        .direction(
-            scrollable::Direction::Vertical(
-                Scrollbar::new().width(8).margin(2).scroller_width(8),
-            ),
-        )
+        let scroll = scrollable(container(messages.spacing(10)).padding(Padding {
+            right: 6.0,
+            ..Padding::ZERO
+        }))
+        .direction(scrollable::Direction::Vertical(
+            Scrollbar::new().width(8).margin(2).scroller_width(8),
+        ))
         .style(styles::panel_scrollable)
         .height(Length::Fill);
 
@@ -568,13 +565,19 @@ impl Brain {
         .into()
     }
 
-    fn stage_header_view<'a>(&self, title: &'a str, subtitle: &'a str) -> Element<'a, BrainMessage> {
+    fn stage_header_view<'a>(
+        &self,
+        title: &'a str,
+        subtitle: &'a str,
+    ) -> Element<'a, BrainMessage> {
         container(
             column![
                 text(title).size(20),
                 text(subtitle)
                     .size(12)
-                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                    .style(|_| iced::widget::text::Style {
+                        color: Some(crate::utils::style::TEXT_DIM)
+                    }),
             ]
             .spacing(4),
         )
@@ -588,9 +591,9 @@ impl Brain {
         container(
             column![
                 text(title).size(13),
-                text(body)
-                    .size(12)
-                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                text(body).size(12).style(|_| iced::widget::text::Style {
+                    color: Some(crate::utils::style::TEXT_DIM)
+                }),
             ]
             .spacing(4),
         )
@@ -610,9 +613,9 @@ impl Brain {
 
         container(
             column![
-                text(title)
-                    .size(11)
-                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                text(title).size(11).style(|_| iced::widget::text::Style {
+                    color: Some(crate::utils::style::TEXT_DIM)
+                }),
                 text(value).size(14),
             ]
             .spacing(3),
@@ -633,9 +636,9 @@ impl Brain {
 
         container(
             column![
-                text(title)
-                    .size(11)
-                    .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                text(title).size(11).style(|_| iced::widget::text::Style {
+                    color: Some(crate::utils::style::TEXT_DIM)
+                }),
                 text(value).size(13),
             ]
             .spacing(3),
@@ -654,7 +657,9 @@ impl Brain {
                         text("Пока раунды не завершались.").size(13),
                         text("После round_result здесь появятся карточки с обоими словами.")
                             .size(12)
-                            .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                            .style(|_| iced::widget::text::Style {
+                                color: Some(crate::utils::style::TEXT_DIM)
+                            }),
                     ]
                     .spacing(4),
                 )
@@ -669,9 +674,12 @@ impl Brain {
                     let words = if summary.words.is_empty() {
                         column![text("Слова ещё не зафиксированы.").size(12)]
                     } else {
-                        summary.words.iter().fold(column![], |column, (player, word)| {
-                            column.push(text(format!("{} → {}", player, word)).size(12))
-                        })
+                        summary
+                            .words
+                            .iter()
+                            .fold(column![], |column, (player, word)| {
+                                column.push(text(format!("{} → {}", player, word)).size(12))
+                            })
                     };
 
                     column.push(
@@ -684,7 +692,11 @@ impl Brain {
                                     "Мысли ещё расходятся"
                                 })
                                 .size(12)
-                                .style(|_| iced::widget::text::Style { color: Some(crate::utils::style::TEXT_DIM) }),
+                                .style(|_| {
+                                    iced::widget::text::Style {
+                                        color: Some(crate::utils::style::TEXT_DIM),
+                                    }
+                                }),
                                 words,
                             ]
                             .spacing(4),
@@ -696,15 +708,13 @@ impl Brain {
                 })
         };
 
-        scrollable(
-            container(content.spacing(10))
-                .padding(Padding { right: 6.0, ..Padding::ZERO }),
-        )
-        .direction(
-            scrollable::Direction::Vertical(
-                Scrollbar::new().width(8).margin(2).scroller_width(8),
-            ),
-        )
+        scrollable(container(content.spacing(10)).padding(Padding {
+            right: 6.0,
+            ..Padding::ZERO
+        }))
+        .direction(scrollable::Direction::Vertical(
+            Scrollbar::new().width(8).margin(2).scroller_width(8),
+        ))
         .style(styles::panel_scrollable)
         .height(Length::Fill)
         .into()

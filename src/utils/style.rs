@@ -274,8 +274,16 @@ pub fn flat_scrollable(_theme: &Theme, status: scrollable::Status) -> scrollable
             ..
         } => scrollable::Style {
             container: container::Style::default(),
-            vertical_rail: if is_vertical_scrollbar_hovered { hot_rail } else { rail },
-            horizontal_rail: if is_horizontal_scrollbar_hovered { hot_rail } else { rail },
+            vertical_rail: if is_vertical_scrollbar_hovered {
+                hot_rail
+            } else {
+                rail
+            },
+            horizontal_rail: if is_horizontal_scrollbar_hovered {
+                hot_rail
+            } else {
+                rail
+            },
             gap: None,
             auto_scroll: scrollable::default(_theme, status).auto_scroll,
         },
@@ -285,8 +293,16 @@ pub fn flat_scrollable(_theme: &Theme, status: scrollable::Status) -> scrollable
             ..
         } => scrollable::Style {
             container: container::Style::default(),
-            vertical_rail: if is_vertical_scrollbar_dragged { hot_rail } else { rail },
-            horizontal_rail: if is_horizontal_scrollbar_dragged { hot_rail } else { rail },
+            vertical_rail: if is_vertical_scrollbar_dragged {
+                hot_rail
+            } else {
+                rail
+            },
+            horizontal_rail: if is_horizontal_scrollbar_dragged {
+                hot_rail
+            } else {
+                rail
+            },
             gap: None,
             auto_scroll: scrollable::default(_theme, status).auto_scroll,
         },

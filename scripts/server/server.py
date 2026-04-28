@@ -21,6 +21,11 @@ MAX_PLAYERS_PER_ROOM = 2
 MAX_CHAT_HISTORY = 100
 MAX_CHAT_MESSAGE_LEN = 500
 MAX_WORD_LEN = 100
+MAX_ROOM_ID_LEN = 64
+MAX_NAME_LEN = 32
+MAX_ROOMS = 256
+MAX_CONNECTIONS = 1024
+MAX_WS_MESSAGE_BYTES = 64 * 1024
 
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html").read_text(encoding="utf-8")
 HTTP_STATUS_TEXT = {
@@ -70,6 +75,7 @@ class Room:
 
 rooms: Dict[str, Room] = {}
 player_to_room: Dict[str, str] = {}
+active_connections: int = 0
 
 
 def touch_room(room: Room):
@@ -83,7 +89,7 @@ async def send_json(ws, data: dict):
 async def broadcast(room: Room, data: dict):
     disconnected = []
 
-    for player in room.players.values():
+    for player in list(room.players.values()):
         try:
             await send_json(player.websocket, data)
         except Exception:
@@ -311,6 +317,12 @@ async def try_finish_round(room: Room):
 async def join_room(ws, room_id: str, name: str) -> Optional[str]:
     room = rooms.get(room_id)
     if room is None:
+        if len(rooms) >= MAX_ROOMS:
+            await send_json(ws, {
+                "type": "error",
+                "message": "Server is full, try again later"
+            })
+            return None
         room = Room(id=room_id)
         rooms[room_id] = room
 
@@ -467,6 +479,20 @@ async def handle_dashboard(reader: asyncio.StreamReader, writer: asyncio.StreamW
 
 
 async def handler(ws):
+    global active_connections
+
+    if active_connections >= MAX_CONNECTIONS:
+        try:
+            await send_json(ws, {
+                "type": "error",
+                "message": "Server is at capacity"
+            })
+            await ws.close(code=1013, reason="Server at capacity")
+        except Exception:
+            pass
+        return
+
+    active_connections += 1
     current_player_id: Optional[str] = None
 
     try:
@@ -497,6 +523,20 @@ async def handler(ws):
                     await send_json(ws, {
                         "type": "error",
                         "message": "room_id is required"
+                    })
+                    continue
+
+                if len(room_id) > MAX_ROOM_ID_LEN:
+                    await send_json(ws, {
+                        "type": "error",
+                        "message": f"room_id is too long (max {MAX_ROOM_ID_LEN} chars)"
+                    })
+                    continue
+
+                if len(name) > MAX_NAME_LEN:
+                    await send_json(ws, {
+                        "type": "error",
+                        "message": f"name is too long (max {MAX_NAME_LEN} chars)"
                     })
                     continue
 
@@ -546,6 +586,7 @@ async def handler(ws):
     finally:
         if current_player_id is not None:
             await remove_player(current_player_id)
+        active_connections -= 1
 
 
 async def main():
@@ -555,6 +596,7 @@ async def main():
         SERVER_PORT,
         ping_interval=20,
         ping_timeout=20,
+        max_size=MAX_WS_MESSAGE_BYTES,
     ):
         dashboard_server = await asyncio.start_server(
             handle_dashboard,

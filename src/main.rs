@@ -3,6 +3,7 @@ mod games;
 mod macros;
 mod utils;
 
+use crate::games::minesweeper::{Minesweeper, MinesweeperMessage};
 use crate::games::wordly::{Wordly, WordlyMessage};
 use iced::time::every;
 use std::time::Duration;
@@ -95,6 +96,12 @@ impl App {
             Screen::Brain(brain) => brain.subscription().map(Message::Brain),
             _ => Subscription::none(),
         };
+        let minesweeper_sub = match &app.screen {
+            Screen::Minesweeper(minesweeper) => {
+                minesweeper.subscription().map(Message::Minesweeper)
+            }
+            _ => Subscription::none(),
+        };
 
         Subscription::batch([
             event::listen_with(|event, _status, _window| match event {
@@ -121,6 +128,7 @@ impl App {
             }),
             every(Duration::from_secs(1)).map(|_| Message::NetworkTick),
             brain_sub,
+            minesweeper_sub,
         ])
     }
 
@@ -165,6 +173,18 @@ impl App {
                     Task::none()
                 }
             },
+            Message::Minesweeper(msg) => match msg {
+                MinesweeperMessage::GoHome => {
+                    app.screen = Screen::Main;
+                    Task::none()
+                }
+                msg => {
+                    if let Screen::Minesweeper(minesweeper) = &mut app.screen {
+                        minesweeper.update(msg);
+                    }
+                    Task::none()
+                }
+            },
             Message::Brain(msg) => match msg {
                 BrainMessage::GoHome => {
                     app.screen = Screen::Main;
@@ -205,6 +225,7 @@ impl App {
         let content: Element<'_, Message> = match &self.screen {
             Screen::Counter(counter) => counter_screen(counter.value),
             Screen::Wordly(wordly_game) => wordly_game.view().map(Message::Wordly),
+            Screen::Minesweeper(minesweeper) => minesweeper.view().map(Message::Minesweeper),
             Screen::Brain(brain) => brain.view().map(Message::Brain),
             Screen::Main => main_screen(),
         };
@@ -327,6 +348,10 @@ fn main_screen() -> Element<'static, Message> {
                 "03 · One Brain",
                 Message::SwitchTo(Screen::Brain(Brain::default())),
             ),
+            menu_link_button(
+                "04 · Minesweeper",
+                Message::SwitchTo(Screen::Minesweeper(Minesweeper::default())),
+            ),
         ]
         .spacing(12)
         .align_x(Horizontal::Center),
@@ -405,6 +430,7 @@ fn counter_screen(value: i32) -> Element<'static, Message> {
 enum Screen {
     Counter(Counter),
     Wordly(Wordly),
+    Minesweeper(Minesweeper),
     Brain(Brain),
     Main,
 }
@@ -419,6 +445,7 @@ enum Message {
     SwitchTo(Screen),
     Counter(CounterMessage),
     Wordly(WordlyMessage),
+    Minesweeper(MinesweeperMessage),
     Brain(BrainMessage),
     KeyPressed(KeyMessage),
     NetworkTick,

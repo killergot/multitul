@@ -204,6 +204,13 @@ impl Brain {
                 Task::none()
             }
             BrainMessage::SendWord => {
+                if self.finished || matches!(self.state, BrainState::FinishedGame) {
+                    self.error = Some(String::from(
+                        "Игра уже завершена. Обновите комнату, чтобы начать заново.",
+                    ));
+                    return Task::none();
+                }
+
                 let word = self.word_input.trim().to_string();
                 if word.is_empty() {
                     self.error = Some(String::from("Введите слово перед отправкой."));
@@ -233,6 +240,17 @@ impl Brain {
 
                 task
             }
+            BrainMessage::RestartRoom => {
+                if !self.finished && !matches!(self.state, BrainState::FinishedGame) {
+                    self.error = Some(String::from(
+                        "Обновить комнату можно только после завершения игры.",
+                    ));
+                    return Task::none();
+                }
+
+                self.error = None;
+                self.send_ws_command(WsCommand::Send(ClientMessage::RestartRoom))
+            }
             BrainMessage::LeaveRoom => {
                 self.connection_request = None;
                 self.ws_sender = None;
@@ -261,6 +279,15 @@ impl Brain {
             primary_button = primary_button.on_press(BrainMessage::OpenJoinForm);
         }
 
+        let mut restart_button = button(text("Обновить комнату").size(15))
+            .width(Length::Fill)
+            .padding(Padding::from([12, 16]))
+            .style(styles::secondary_button);
+
+        if self.finished || matches!(self.state, BrainState::FinishedGame) {
+            restart_button = restart_button.on_press(BrainMessage::RestartRoom);
+        }
+
         let mut leave_button = button(text("Покинуть комнату").size(15))
             .width(Length::Fill)
             .padding(Padding::from([12, 16]))
@@ -287,6 +314,7 @@ impl Brain {
             text("Два игрока, одна мысль, один экран контроля.").size(14),
             status_card,
             primary_button,
+            restart_button,
             leave_button,
             button(text("Назад").size(15))
                 .width(Length::Fill)
@@ -852,6 +880,8 @@ impl Brain {
 
                 if finished {
                     self.state = BrainState::FinishedGame;
+                } else if matches!(self.state, BrainState::FinishedGame) {
+                    self.state = BrainState::InRoom;
                 }
             }
             ServerMessage::RoundResult {
@@ -898,6 +928,17 @@ impl Brain {
                     timestamp: 0.0,
                 });
                 chat_changed = true;
+            }
+            ServerMessage::RoomRestarted { room_id: _ } => {
+                self.word_input.clear();
+                self.ready_count = 0;
+                self.round = 1;
+                self.finished = false;
+                self.last_submitted_word = None;
+                self.round_summaries.clear();
+                self.state = BrainState::InRoom;
+                self.error = None;
+                rounds_changed = true;
             }
             ServerMessage::Left => {
                 self.connection_request = None;
@@ -951,6 +992,7 @@ pub enum BrainMessage {
     WordInputChanged(String),
     SendWord,
     SendChat,
+    RestartRoom,
     LeaveRoom,
     WsReady(mpsc::Sender<WsCommand>),
     WsConnected,

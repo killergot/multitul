@@ -4,6 +4,7 @@ pub enum ClientMessage {
     Join { room_id: String, name: String },
     SubmitWord { word: String },
     ChatMessage { text: String },
+    RestartRoom,
     Leave,
     Ping,
 }
@@ -55,6 +56,9 @@ pub enum ServerMessage {
         round: u32,
         word: String,
         history: Vec<serde_json::Value>,
+    },
+    RoomRestarted {
+        room_id: String,
     },
     Left,
     Pong,

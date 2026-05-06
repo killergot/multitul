@@ -400,6 +400,40 @@ async def submit_word(player_id: str, word: str):
     await try_finish_round(room)
 
 
+async def restart_room(player_id: str):
+    room_id = player_to_room.get(player_id)
+    if not room_id:
+        return
+
+    room = rooms.get(room_id)
+    if room is None:
+        return
+
+    player = room.players.get(player_id)
+    if player is None:
+        return
+
+    if not room.finished:
+        await send_json(player.websocket, {
+            "type": "error",
+            "message": "Room can be restarted only after the game is finished"
+        })
+        return
+
+    room.submissions.clear()
+    room.round_number = 1
+    room.finished = False
+    room.history.clear()
+    touch_room(room)
+
+    await broadcast(room, {
+        "type": "room_restarted",
+        "room_id": room.id,
+    })
+    await add_system_message(room, f"{player.name} restarted the room")
+    await broadcast_room_state(room)
+
+
 async def remove_player(player_id: str):
     room_id = player_to_room.pop(player_id, None)
     if not room_id:
@@ -563,6 +597,16 @@ async def handler(ws):
 
                 text = str(data.get("text", ""))
                 await handle_chat_message(current_player_id, text)
+
+            elif msg_type == "restart_room":
+                if current_player_id is None:
+                    await send_json(ws, {
+                        "type": "error",
+                        "message": "Join a room first"
+                    })
+                    continue
+
+                await restart_room(current_player_id)
 
             elif msg_type == "leave":
                 if current_player_id is not None:

@@ -90,3 +90,11 @@ scripts/
 - [`flate2`](https://crates.io/crates/flate2) — распаковка git-объектов
 - [`ping-rs`](https://crates.io/crates/ping-rs) — индикатор сети
 - сервер: Python 3 + [`websockets`](https://pypi.org/project/websockets/)
+
+## Лицензия
+
+Исходный код проекта распространяется по [лицензии MIT](LICENSE).
+
+Лицензия MIT проекта не распространяется на словари `assets/words_5_ru.txt`
+и `assets/all_nouns_ru.txt`. Условия их использования определяются отдельно
+правообладателями исходных данных. Сторонние зависимости сохраняют свои лицензии.
